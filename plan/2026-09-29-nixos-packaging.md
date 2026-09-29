@@ -108,7 +108,13 @@ blast radius is smaller.
      arg `$3` is `1`, which `next()` passes on the first job and then sets
      `swept = true`.
    - The `-mmin +2` and exact-name guards stay.
-   → verify: `sh -n` on the script text. Runtime check in step 10.
+   **Deviation (implemented):** the sweep runs once per *directory* per
+   writer (a `swept` map keyed by directory), not once per writer. A writer
+   writes into `~/.config/hypr`, `~/.config/hypr/hyprforge` and
+   `~/.local/share/applications`, and a per-writer flag would skip the others.
+   → verify: `sh -n` on the script text, and run it against a temp dir: it
+   sweeps only when `$3=1`, replaces a symlink instead of following it, and
+   writes `.bak`. Runtime check in step 10.
 
 7. **B2 + B3 + B7, Service.qml**:
    - B2: add `abort(prefix)` to SafeWriter to drop queued jobs. In

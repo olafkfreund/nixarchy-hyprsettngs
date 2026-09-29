@@ -22,16 +22,19 @@ Item {
   // write() calls must not rely on it.
   property bool active: false
   readonly property bool busy: active || queue.length > 0
+  // Stale temps are swept once per directory per writer, not on every write.
+  property var swept: ({})
 
   readonly property string script: [
     'set -eu',
-    'd=$(dirname -- "$1")',
+    // Paths are always absolute files (callers build them from $HOME).
+    'd=${1%/*}',
     'mkdir -p -- "$d"',
-    'n=$(basename -- "$1")',
+    'n=${1##*/}',
     // A write killed mid-flight (e.g. the shell restarting) can't clean up after
-    // itself; remove our own stale temp files first. Exact names only; -delete
-    // removes a symlink itself, never its target.
-    'find "$d" -maxdepth 1 -type f \\( -name ".$n.??????" -o -name ".$n.bak.??????" \\) -mmin +2 -delete 2>/dev/null || true',
+    // itself; remove our own stale temp files first, once per writer ($3).
+    // Exact names only; -delete removes a symlink itself, never its target.
+    '[ "$3" = 1 ] && find "$d" -maxdepth 1 -type f \\( -name ".$n.??????" -o -name ".$n.bak.??????" \\) -mmin +2 -delete 2>/dev/null || true',
     'if [ "$2" = 1 ] && [ -f "$1" ] && [ ! -L "$1" ]; then',
     '  b=$(mktemp -- "$d/.$n.bak.XXXXXX")',
     '  cat -- "$1" > "$b" || { rm -f -- "$b"; exit 1; }',
@@ -57,7 +60,10 @@ Item {
     var job = queue[0]
     queue = queue.slice(1)
     proc.job = job
-    proc.command = ["sh", "-c", script, "sh", job.path, job.backup ? "1" : "0"]
+    var dir = job.path.replace(/\/[^\/]*$/, "")
+    var sweep = !swept[dir]
+    if (sweep) { var s = Object.assign({}, swept); s[dir] = true; swept = s }
+    proc.command = ["sh", "-c", script, "sh", job.path, job.backup ? "1" : "0", sweep ? "1" : "0"]
     proc.running = true
   }
 
