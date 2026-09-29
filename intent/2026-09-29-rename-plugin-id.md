@@ -1,5 +1,5 @@
 ---
-status: draft
+status: approved
 issue: none (issues are disabled on this repo)
 author: olafkfreund
 ---
@@ -71,14 +71,8 @@ only `omarchy.*` is reserved.
 
 ## Open questions
 
-1. Branch/PR: this builds on PR #4 (display name), since it touches the
-   same strings. Stack it on #4, or fold it into #4?
-2. `shell.json` migration for existing users: document the two commands
-   (`omarchy plugin disable aziz.hyprforge`, then
-   `omarchy plugin enable nixarchy.hyprlandsettings`), or have the plugin's
-   service detect the old entry on first start and tell the user
-   (notification)? It can't safely edit `shell.json` itself.
-3. Should the IPC target also move to the new name (for example
-   `omarchy-shell hyprlandsettings …`), with `hyprforge` kept as an alias?
-   Default: keep only `hyprforge`, since that's what the user's bindings
-   use.
+Resolved at approval (2026-09-29): the user approved with the suggested answers:
+
+1. Stacked on PR #4 as its own PR.
+2. Documented migration: `omarchy plugin disable aziz.hyprforge`, then `omarchy plugin enable nixarchy.hyprlandsettings`. No automatic detection.
+3. The IPC target stays `hyprforge` only. No alias.
