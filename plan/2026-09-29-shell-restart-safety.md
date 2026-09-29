@@ -74,5 +74,5 @@ spec: spec/2026-09-29-shell-restart-safety.md
 - **Step 2:** nixarchy #953 was reopened, with the journal evidence, the
   hot-reload measurements and the patch direction:
   https://github.com/olafkfreund/nixarchy/issues/953#issuecomment-5889563876
-- **Step 3:** waiting on the user (a PR for this records-only branch, or
-  close it).
+- **Step 3:** the user said "continue" after all five PRs merged, so the
+  records go to `main` through their own PR, like the other five sets.
