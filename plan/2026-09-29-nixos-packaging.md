@@ -144,6 +144,13 @@ blast radius is smaller.
      `persistNow`, if `root.service && root.service.opBusy`, call
      `schedulePersist()` and return. The existing `stateStale` re-read adopts
      the service's result.
+   **Deviation (implemented):** the guard is in `withState`, so it covers
+   every script op and not only `run()`. The panel does not retry through
+   `schedulePersist()`, because the pending timer would mark the service's
+   write as stale and the panel's commit would then overwrite it. Instead it
+   sets `waitService`. When `opBusy` clears, it re-reads `state.json`: a
+   changed file is adopted (the service wins, as specced), and an unchanged
+   file means the panel's own edit is committed.
    → verify: runtime check in step 10.
 
 9. **E4 + E5 + E6 + B8, Panel.qml**:

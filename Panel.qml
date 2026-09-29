@@ -682,6 +682,9 @@ Item {
     root.editing = false
     if (!root.stateLoaded) return
     if (root.committing) { root.again = true; return }
+    // A script change is mid-flight: wait for it, then re-read. If it changed
+    // state.json its result wins; otherwise this edit is committed then.
+    if (root.service && root.service.opBusy) { root.waitService = true; return }
     dropRedundant()
     var problems = Engine.validate(root.cfg, typeOf)
     if (problems.length) {
@@ -1166,6 +1169,18 @@ Item {
   // The service applies profiles/looks from keybindings; it tells us so we can
   // re-read instead of watching files.
   property var service: null
+  Binding {
+    target: root.service
+    property: "panelBusy"
+    value: root.committing
+    when: root.service !== null
+  }
+  property bool waitService: false
+  Connections {
+    target: root.service
+    ignoreUnknownSignals: true
+    function onOpBusyChanged() { if (root.waitService && !root.service.opBusy) stateReader.read() }
+  }
   Connections {
     target: root.service
     ignoreUnknownSignals: true
@@ -1204,6 +1219,11 @@ Item {
         root.stateLoaded = false
         root.readFailed("~/.config/hypr/hyprforge/state.json", status)
         return
+      }
+      if (root.waitService) {
+        root.waitService = false
+        if (raw === root.lastStateText) { root.stateLoaded = true; persistNow(); return }
+        root.pendingLabel = ""   // the script's change replaces the unsaved edit
       }
       if (raw === root.lastStateText) { root.stateLoaded = true; return }
       if (root.stateLoaded && (root.committing || root.editing || persistTimer.running)) { root.stateStale = true; return }

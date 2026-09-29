@@ -100,9 +100,13 @@ QtObject {
   property var ops: []
   property var currentOp: null
   property bool opBusy: false
+  // Set by the panel while it commits. Both sides read-modify-write state.json,
+  // so script changes are refused meanwhile rather than racing it.
+  property bool panelBusy: false
   property var cachedProfiles: []
 
   function withState(fn) {
+    if (panelBusy) { notify("Hyprforge is saving; try again in a moment", true); return }
     ops = ops.concat([fn])
     if (!opBusy) nextOp()
   }
