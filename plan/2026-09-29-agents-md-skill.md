@@ -126,3 +126,17 @@ everything, and the HM option defaults to off.
 Both branches touch `flake.nix` and `README.md`. Whichever merges second
 rebases. The CI PR also reformats `flake.nix` with `nixfmt`, so this branch
 runs `nix fmt` after rebasing.
+
+### Step 3 correction (2026-09-29, found during PR #4's live check)
+
+The step 3 run had the original copy at
+`~/.config/omarchy/plugins/aziz.hyprforge.bak`, inside the plugins dir, and
+Omarchy loaded that copy rather than the linked build (same id). The skill's
+claims were re-run on the real build, with the old copy out of the plugins
+dir, and all hold:
+- panel commands print nothing;
+- `look stock` drops existing look overrides (2 → 0);
+- `look nope` and `set bogus:key` return `ok` and change nothing;
+- `listProfiles` lists a saved profile on the first call after a restart.
+
+No skill text changes.
