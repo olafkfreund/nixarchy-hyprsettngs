@@ -148,7 +148,7 @@ QtObject {
   }
 
   property Process baselineProc: Process {
-    command: svc.capped(["lua", svc.pluginDir + "/baseline.lua", svc.omarchyPath + "/default/hypr/looknfeel.lua", svc.home + "/.config/hypr/looknfeel.lua"], 1024 * 1024)
+    command: Engine.capped(["lua", svc.pluginDir + "/baseline.lua", svc.omarchyPath + "/default/hypr/looknfeel.lua", svc.home + "/.config/hypr/looknfeel.lua"], 1024 * 1024)
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
@@ -178,11 +178,6 @@ QtObject {
   property bool stateOnlyOp: false
 
   property Process reloadProc: Process { command: ["timeout", "8", "hyprctl", "reload"] }
-
-  // Cap a command's stdout before it reaches QML (StdioCollector keeps all of it).
-  function capped(cmd, bytes) {
-    return ["sh", "-c", '"$@" | head -c ' + Math.floor(bytes), "sh"].concat(cmd)
-  }
 
   property var pendingSet: null
   property Process checkProc: Process {
@@ -235,11 +230,11 @@ QtObject {
     p.state.cfg = Engine.normalize(p.state.cfg)
     var problems = Engine.validate(p.state.cfg, typeOf)
     if (problems.length) { notify("Not applied: " + problems[0].key + " " + problems[0].problem, true); opDone(); return }
-    p.lua = Engine.renderFile(p.state.cfg, { baseline: baseline })
     var body = Engine.render(p.state.cfg, { baseline: baseline })
+    p.lua = Engine.wrapFile(body)
     checked = p
     if (!body) { commit(); return }
-    evalCheck.command = capped(["timeout", "5", "hyprctl", "eval", "local _hyprforge_check = true\n" + body], 64 * 1024)
+    evalCheck.command = Engine.capped(["timeout", "5", "hyprctl", "eval", "local _hyprforge_check = true\n" + body], 64 * 1024)
     evalCheck.running = true
   }
 
@@ -369,7 +364,7 @@ QtObject {
         return svc.run(function(state) { state.cfg = Engine.normalize(state.cfg); state.cfg.options[key] = v; return key + " = " + value })
       }
       svc.pendingSet = { key: key, value: v, text: value }
-      svc.checkProc.command = svc.capped(["timeout", "5", "hyprctl", "getoption", key, "-j"], 64 * 1024)
+      svc.checkProc.command = Engine.capped(["timeout", "5", "hyprctl", "getoption", key, "-j"], 64 * 1024)
       svc.checkProc.running = true
       return "ok"
     }

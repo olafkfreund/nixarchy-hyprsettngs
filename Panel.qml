@@ -623,7 +623,7 @@ Item {
     if (!body) return
     root.previewDirty = true
     if (evalProc.running) { root.previewPending = true; return }
-    evalProc.command = capped(["timeout", "3", "hyprctl", "eval", "local _hyprforge = true\n" + body], 64 * 1024)
+    evalProc.command = Engine.capped(["timeout", "3", "hyprctl", "eval", "local _hyprforge = true\n" + body], 64 * 1024)
     evalProc.running = true
   }
 
@@ -675,6 +675,7 @@ Item {
   property bool rejected: false
   property bool luaWriting: false
   property bool stateStale: false
+  property string commitLuaText: ""   // rendered once per commit in persistNow
 
   function persistNow() {
     persistTimer.stop()
@@ -691,8 +692,9 @@ Item {
     root.commitCfg = Engine.normalize(root.cfg)
     root.commitLabel = root.pendingLabel
     root.pendingLabel = ""
-    var next = Engine.renderFile(root.commitCfg, { baseline: root.animBaseline })
-    if (next === root.luaText) {
+    var body = Engine.render(root.commitCfg, { baseline: root.animBaseline })
+    root.commitLuaText = Engine.wrapFile(body)
+    if (root.commitLuaText === root.luaText) {
       saveState(root.commitCfg)
       recordHistory(root.commitCfg, root.commitLabel)
       if (root.previewDirty) reloadProc.running = true
@@ -700,9 +702,8 @@ Item {
       return
     }
     root.statusText = "Checking with Hyprland…"
-    var body = Engine.render(root.commitCfg, { baseline: root.animBaseline })
     if (!body) { commitChecked(); return }
-    checkProc.command = capped(["timeout", "5", "hyprctl", "eval", "local _hyprforge_check = true\n" + body], 64 * 1024)
+    checkProc.command = Engine.capped(["timeout", "5", "hyprctl", "eval", "local _hyprforge_check = true\n" + body], 64 * 1024)
     checkProc.running = true
   }
 
@@ -711,7 +712,7 @@ Item {
     recordHistory(root.commitCfg, root.commitLabel)
     root.statusText = "Applying…"
     root.luaWriting = true
-    root.pendingLuaText = Engine.renderFile(root.commitCfg, { baseline: root.animBaseline })
+    root.pendingLuaText = root.commitLuaText
     writer.write(root.luaPath, root.pendingLuaText)
   }
 
@@ -793,16 +794,11 @@ Item {
     var keys = root.descriptions.length ? root.descriptions.map(function(d) { return d.name }) : Schema.liveKeys()
     var batch = []
     for (var i = 0; i < keys.length; i++) batch.push("getoption " + keys[i])
-    liveProc.command = capped(["timeout", "5", "hyprctl", "-j", "--batch", batch.join(" ; ")], 4 * 1024 * 1024)
+    liveProc.command = Engine.capped(["timeout", "5", "hyprctl", "-j", "--batch", batch.join(" ; ")], 4 * 1024 * 1024)
     liveProc.running = true
   }
 
   function refreshClients() { clientsProc.running = true }
-
-  // Cap a command's stdout before it reaches QML (StdioCollector keeps all of it).
-  function capped(cmd, bytes) {
-    return ["sh", "-c", '"$@" | head -c ' + Math.floor(bytes), "sh"].concat(cmd)
-  }
 
   // ============================================================= catalogue
 
@@ -1046,13 +1042,13 @@ Item {
 
   Process {
     id: errorsProc
-    command: root.capped(["timeout", "5", "hyprctl", "configerrors"], 64 * 1024)
+    command: Engine.capped(["timeout", "5", "hyprctl", "configerrors"], 64 * 1024)
     stdout: StdioCollector { waitForEnd: true; onStreamFinished: root.afterReload(text) }
   }
 
   Process {
     id: initialErrorsProc
-    command: root.capped(["timeout", "5", "hyprctl", "configerrors"], 64 * 1024)
+    command: Engine.capped(["timeout", "5", "hyprctl", "configerrors"], 64 * 1024)
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
@@ -1076,7 +1072,7 @@ Item {
 
   Process {
     id: descProc
-    command: root.capped(["timeout", "5", "hyprctl", "descriptions", "-j"], 4 * 1024 * 1024)
+    command: Engine.capped(["timeout", "5", "hyprctl", "descriptions", "-j"], 4 * 1024 * 1024)
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
@@ -1088,7 +1084,7 @@ Item {
 
   Process {
     id: baselineProc
-    command: root.capped(["lua", root.pluginDir + "/baseline.lua", root.omarchyPath + "/default/hypr/looknfeel.lua", root.home + "/.config/hypr/looknfeel.lua"], 1024 * 1024)
+    command: Engine.capped(["lua", root.pluginDir + "/baseline.lua", root.omarchyPath + "/default/hypr/looknfeel.lua", root.home + "/.config/hypr/looknfeel.lua"], 1024 * 1024)
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
@@ -1099,7 +1095,7 @@ Item {
 
   Process {
     id: monitorsProc
-    command: root.capped(["timeout", "5", "hyprctl", "monitors", "-j"], 256 * 1024)
+    command: Engine.capped(["timeout", "5", "hyprctl", "monitors", "-j"], 256 * 1024)
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
@@ -1121,7 +1117,7 @@ Item {
 
   Process {
     id: clientsProc
-    command: root.capped(["timeout", "5", "hyprctl", "clients", "-j"], 2 * 1024 * 1024)
+    command: Engine.capped(["timeout", "5", "hyprctl", "clients", "-j"], 2 * 1024 * 1024)
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
@@ -1144,7 +1140,7 @@ Item {
   Process {
     id: pasteProc
     // One byte past the limit, so an oversized clipboard is detected, not truncated.
-    command: root.capped(["timeout", "5", "wl-paste", "--no-newline"], root.importLimit + 1)
+    command: Engine.capped(["timeout", "5", "wl-paste", "--no-newline"], root.importLimit + 1)
     stdout: StdioCollector { waitForEnd: true; onStreamFinished: root.importText(text) }
   }
 
