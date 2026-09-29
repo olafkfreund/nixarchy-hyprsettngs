@@ -33,7 +33,7 @@ QtObject {
     var u = String(Qt.resolvedUrl("baseline.lua"))
     return decodeURIComponent(u.replace(/^file:\/\//, "")).replace(/\/baseline\.lua$/, "")
   }
-  readonly property string pluginId: (manifest && manifest.id) || "aziz.hyprforge"
+  readonly property string pluginId: (manifest && manifest.id) || "nixarchy.hyprlandsettings"
 
   // ------------------------------------------------------------ launcher
   readonly property string desktopDest: home + "/.local/share/applications/hyprforge.desktop"

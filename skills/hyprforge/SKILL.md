@@ -1,6 +1,6 @@
 ---
 name: hyprforge
-description: Change how Hyprland looks and behaves on an Omarchy / Nixarchy desktop through the Hyprforge plugin (aziz.hyprforge, packaged as nixarchy-hyprsetting). It covers gaps, borders and border colors, rounding, opacity, dimming, blur, shadow and glow, animations and their speed, layouts, input, cursor, gestures, whole-desktop "looks", motion presets, and saved profiles. Use it when the user asks things like "make my windows rounder", "more blur", "turn off animations", "switch to my Gaming profile" or "save this setup", and Hyprforge is installed. Changes go through Hyprforge's validation, dry-run, history and undo instead of hand-edited config. For hand-editing ~/.config/hypr files, keybindings or monitors, use the nixarchy skill instead.
+description: Change how Hyprland looks and behaves on an Omarchy / Nixarchy desktop through the Hyprforge plugin (id nixarchy.hyprlandsettings, shown as Nixarchy Hyprland Settings, packaged as nixarchy-hyprsetting). It covers gaps, borders and border colors, rounding, opacity, dimming, blur, shadow and glow, animations and their speed, layouts, input, cursor, gestures, whole-desktop "looks", motion presets, and saved profiles. Use it when the user asks things like "make my windows rounder", "more blur", "turn off animations", "switch to my Gaming profile" or "save this setup", and Hyprforge is installed. Changes go through Hyprforge's validation, dry-run, history and undo instead of hand-edited config. For hand-editing ~/.config/hypr files, keybindings or monitors, use the nixarchy skill instead.
 ---
 
 # Hyprforge from the command line
@@ -16,7 +16,7 @@ panel.
 ## First: is it installed and connected?
 
 ```bash
-omarchy-shell shell listPlugins | jq -r '.[] | select(.id=="aziz.hyprforge") | .enabled'   # true
+omarchy-shell shell listPlugins | jq -r '.[] | select(.id=="nixarchy.hyprlandsettings") | .enabled'   # true
 grep -q '"hypr.hyprforge"' ~/.config/hypr/hyprland.lua && echo connected
 ```
 
@@ -36,6 +36,12 @@ grep -q '"hypr.hyprforge"' ~/.config/hypr/hyprland.lua && echo connected
 - **Before a large change, take a restore point:**
   `omarchy-shell hyprforge saveProfile "before-<task>"`.
 - **Verify every change** (see below). `ok` doesn't mean it was applied.
+- **Busy right after an install or update?** If `omarchy-shell` stops
+  answering just after the plugin was installed, updated or moved, the
+  shell is hot-reloading. Wait until it lists the plugin again:
+  `sleep 5; until omarchy-shell shell listPlugins 2>/dev/null | grep -q '"nixarchy.hyprlandsettings"'; do sleep 2; done`.
+  **Don't** run `omarchy restart shell` then; it can leave the desktop with
+  no shell (nixarchy #953).
 
 ## Commands
 
