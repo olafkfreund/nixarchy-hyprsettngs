@@ -296,4 +296,9 @@ Rollback: remove the `pcall` line, restore the `.bak` files, and
   put in place temporarily, `hyprctl binds` listed "Hyprforge" (SUPER+ALT+H)
   and "Next Hyprforge profile" (SUPER+ALT+SHIFT+P). The temporary file was
   then removed so it can't block Home Manager.
-- Duplicate-key scan now: only SUPER+SHIFT+M (Music | Meeting) remains.
+- 13, meet clash resolved (user chose the suggested option): the meeting
+  key stays SUPER+SHIFT+M, matching GNOME. Omarchy's default Music is
+  unbound and rebound to SUPER+CTRL+SHIFT+M in `bindings.lua`, above the
+  `meet-binds` pcall so the unbind can't remove the meeting key.
+  `omarchy-meet-binds.nix` is unchanged.
+- Duplicate-key scan now: **none**. `configerrors` is empty.
