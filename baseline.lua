@@ -33,7 +33,7 @@ end
 
 local function num(v)
   local n = tonumber(v)
-  if not n or n ~= n then return "null" end
+  if not n or n ~= n or n == math.huge or n == -math.huge then return "null" end
   return string.format("%.4f", n):gsub("%.?0+$", "")
 end
 
@@ -44,16 +44,20 @@ end
 
 local out = {}
 local cs = {}
+-- A malformed entry (e.g. points = 5) is skipped, not allowed to abort the
+-- whole output, which would leave the panel with an empty baseline.
 for _, name in ipairs(curveOrder) do
   local c = curves[name]
-  if c.type == "spring" then
-    cs[#cs + 1] = string.format('{"name":"%s","type":"spring","mass":%s,"stiffness":%s,"dampening":%s}',
-      esc(name), num(c.mass or 1), num(c.stiffness or 100), num(c.dampening or c.damping or 10))
-  else
+  local ok, entry = pcall(function()
+    if c.type == "spring" then
+      return string.format('{"name":"%s","type":"spring","mass":%s,"stiffness":%s,"dampening":%s}',
+        esc(name), num(c.mass or 1), num(c.stiffness or 100), num(c.dampening or c.damping or 10))
+    end
     local p = c.points or { { 0, 0 }, { 1, 1 } }
-    cs[#cs + 1] = string.format('{"name":"%s","type":"bezier","points":[%s,%s,%s,%s]}',
+    return string.format('{"name":"%s","type":"bezier","points":[%s,%s,%s,%s]}',
       esc(name), num(p[1][1]), num(p[1][2]), num(p[2][1]), num(p[2][2]))
-  end
+  end)
+  if ok then cs[#cs + 1] = entry end
 end
 
 local as = {}

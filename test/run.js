@@ -188,5 +188,17 @@ check(Engine.parsePalette('accent = "#a88bff"\nred = "#ff6f91"').length === 2, "
   check(JSON.stringify(Engine.shape({ options: 1 })) === JSON.stringify(Engine.defaultConfig()), "shape fills malformed fields")
 }
 
+// 8. baseline.lua skips malformed curves and never prints bare inf
+{
+  const f = path.join(os.tmpdir(), "hyprforge-bad-" + process.pid + ".lua")
+  fs.writeFileSync(f, 'hl.curve("bad", { points = 5 })\nhl.curve("good", { points = { {0.1, 0.2}, {0.3, 1} } })\nhl.animation({ leaf = "windows", speed = math.huge, bezier = "good" })\n')
+  let out = null
+  try { out = JSON.parse(execFileSync("lua", [path.join(root, "baseline.lua"), f]).toString()) } catch (e) {}
+  fs.unlinkSync(f)
+  check(out !== null, "baseline output is valid JSON with bad input")
+  check(out && out.curves.length === 1 && out.curves[0].name === "good", "bad curve skipped, good kept")
+  check(out && out.animations.length === 1 && out.animations[0].speed === null, "inf speed becomes null")
+}
+
 if (failures) { console.log(`\n${failures} failure(s)`); process.exit(1) }
 console.log("all good")
