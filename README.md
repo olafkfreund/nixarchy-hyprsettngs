@@ -235,6 +235,8 @@ A [devenv](https://devenv.sh) shell provides `node` and `lua`. Run
 devenv shell -- test        # node test/run.js (offline; also run by `nix flake check`)
 devenv shell -- test-live   # node test/live.js (needs a running Omarchy)
 nix build .#default         # the plugin as installed by the Home Manager module
+nix flake check             # package, tests and lint: exactly what CI runs
+nix fmt                     # format the Nix files
 ```
 
 ## Credits
