@@ -1,5 +1,5 @@
 ---
-status: draft
+status: approved
 issue: none (issues are disabled on this repo)
 author: olafkfreund
 ---
@@ -55,11 +55,9 @@ safety commits (SafeWriter, bounded input).
 
 ## Open questions
 
-1. Name: README says "nixarchy-hyprsetting" but the repo is
-   "nixarchy-hyprsettngs". Rename only the README title, or also the panel's
-   display name in `manifest.json` / launcher entry?
-2. Install mechanism: a Home Manager module that links the store path into
-   `~/.config/omarchy/plugins/aziz.hyprforge` (and enables it), or only a
-   package output that the Nixarchy config wires in itself?
-3. Review scope: fix everything confirmed, or only bugs, leaving pure
-   efficiency/refactor items as a list?
+Resolved at approval (2026-09-29):
+
+1. Name: rename in README only. `manifest.json`, launcher entry and all ids
+   stay as they are.
+2. Install mechanism: a Home Manager module.
+3. Review scope: fix every confirmed finding (bugs, efficiency and quality).
