@@ -43,9 +43,9 @@ All are `omarchy-shell hyprforge <command> [args]`.
 
 | Command | Does |
 |---|---|
-| `open` / `close` / `toggle` | Show or hide the panel |
+| `open` / `close` / `toggle` | Show or hide the panel (these print nothing) |
 | `section <id>` | Open the panel at a section. Ids: `home windows borders corners opacity dimming blur shadow glow animations layout groups input cursor gestures behavior rules profiles all` |
-| `look <id>` | Apply a whole-desktop look: `stock` (Omarchy), `glass` (Frosted glass), `neon`, `soft` (Soft & rounded), `flat` (Flat & sharp), `zen` (Zen focus), `compact`, `retro`, `performance` |
+| `look <id>` | Replace all look settings (gaps, borders, corners, opacity, blur, shadow, glow) with a preset. Overrides the user made in those sections are dropped, so take a restore point first: `stock` (Omarchy), `glass` (Frosted glass), `neon`, `soft` (Soft & rounded), `flat` (Flat & sharp), `zen` (Zen focus), `compact`, `retro`, `performance` |
 | `motion <id>` | Apply an animation preset: `omarchy`, `snappy`, `smooth`, `bouncy`, `slide`, `fade`, `minimal` |
 | `set <key> <value>` | Set one option (see below) |
 | `unset <key>` | Drop an override, going back to Omarchy's or the user's own value |
@@ -90,9 +90,10 @@ All are `omarchy-shell hyprforge <command> [args]`.
 - **Refused while the panel is saving.** If the user is dragging a slider
   at that moment, your command is dropped with a notification. Wait a
   second and retry.
-- **`listProfiles` can be stale.** It returns what the service read on its
-  previous operation, which is empty right after a shell restart. The
-  reliable list is:
+- **`listProfiles` can miss recent panel saves.** It answers from what the
+  service last read, and a profile saved in the panel isn't there until the
+  service's next operation. Call it twice (the first call triggers a
+  re-read), or read the file:
   `jq -r '.profiles | keys[]' ~/.config/hypr/hyprforge/state.json`.
 - **Omarchy toggles win.** Toggles such as "opinionated looks" or "no gaps"
   load after Hyprforge on purpose. A correct change can look ineffective

@@ -79,6 +79,25 @@ commit per step.
    and `configerrors` is empty. Any mismatch fixes the skill text and is
    recorded here.
 
+   **Results and deviations (implemented, 2026-09-29):**
+   - The installed plugin was the original copy, without this repo's fixes,
+     so the branch build was linked in for the run (as in PR #1 step 11),
+     then the original copy was put back.
+   - Every command ran. `open`/`close`/`toggle`/`section` print nothing, and
+     the rest print `ok`. `look nope` and `set bogus:key` returned `ok` and
+     changed nothing, which is what the skill says.
+   - **Skill corrected:** `look stock` dropped a pre-existing user override
+     (1 → 0 options). A look replaces every look-section setting, and the
+     skill now says so and tells agents to take a restore point first.
+   - **Skill corrected:** `listProfiles` is **not** stale after a restart
+     (it returned the profile on the first call; the service reads state on
+     start). The spec's claim was too broad. The real gap, from the code, is
+     a panel-saved profile before the service's next op. The skill now says
+     "call twice or read the file".
+   - Restored: the `~/.config/hypr/hyprforge/` dir and `hyprforge.lua` are
+     byte-identical to the backup (`diff -r`, `cmp`), the original plugin
+     copy is back, and `configerrors` is empty.
+
 4. **HM option**: add `skill.enable` to `flake.nix`.
    → verify: `nix flake check`. `nix eval` of the module with the option
    true shows `home.file.".claude/skills/hyprforge"`, and with it false the
