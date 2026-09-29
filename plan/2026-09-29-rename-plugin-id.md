@@ -195,3 +195,8 @@ naming its step.
   state/Lua/launcher. `shell.json`, the state dir, `hyprforge.lua` and
   `hyprforge.desktop` are byte-identical to the backup. The shell is up
   and `configerrors` is empty.
+
+- **Found by restart-safety plan step 1 (deviation, implemented):**
+  `AGENTS.md`'s command block still said
+  `omarchy restart shell  # after any QML change`, which contradicts
+  invariant 9. It's replaced with the hot-reload note.

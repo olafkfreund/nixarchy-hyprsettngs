@@ -23,7 +23,8 @@ devenv shell -- test        # node test/run.js: offline, no Hyprland needed
 devenv shell -- test-live   # node test/live.js: needs a running Omarchy; briefly changes the look
 nix flake check             # package + tests + lint (what CI runs)
 nix build .#default         # the plugin as the Home Manager module installs it
-omarchy restart shell       # after any QML change: plugin QML is cached by URL
+# after a QML change the running shell hot-reloads the plugin: wait for it
+# to be listed again; don't restart the shell mid-reload (invariant 9)
 ```
 
 Run `devenv allow` once in a fresh clone.
