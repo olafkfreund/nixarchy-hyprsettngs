@@ -43,6 +43,7 @@
               default = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
               description = "The plugin package linked into ~/.config/omarchy/plugins.";
             };
+            skill.enable = lib.mkEnableOption "the Hyprforge skill for AI agents, in ~/.claude/skills/hyprforge";
             keybindings = {
               open = lib.mkOption {
                 type = lib.types.nullOr lib.types.str;
@@ -62,6 +63,7 @@
           # pcall(require, "hypr.hyprforge-binds"), which the user adds once.
           config = lib.mkIf cfg.enable {
             xdg.configFile."omarchy/plugins/aziz.hyprforge".source = cfg.package;
+            home.file.".claude/skills/hyprforge" = lib.mkIf cfg.skill.enable { source = ./skills/hyprforge; };
             xdg.configFile."hypr/hyprforge-binds.lua".text =
               let kb = cfg.keybindings; in
               lib.concatStringsSep "\n" ([ "-- Hyprforge keybindings, managed by Home Manager (programs.nixarchy-hyprsetting)." ]
