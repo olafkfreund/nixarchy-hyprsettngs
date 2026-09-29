@@ -1,5 +1,5 @@
 ---
-status: draft
+status: approved
 issue: none (issues are disabled on this repo)
 author: olafkfreund
 ---
@@ -65,11 +65,7 @@ swaps the plugin folder: steps 1 and 2 above, exactly.
 
 ## Open questions
 
-1. The root bug (`timeout 5` in `omarchy-restart-shell`): leave it as #953
-   decided; reopen #953 in nixarchy and carry a patch (it waits for the old
-   instance to really exit, or relaunches if the new one bails out with
-   "already running"); or file it upstream at `omacom/omarchy`, which is
-   outward-facing and needs your explicit OK?
-2. Scope in this repo: docs and procedure only (recommended); or also an HM
-   activation step that, after a switch, waits for the hot-reload and pings
-   the shell, restarting only if it's gone?
+Resolved at approval (2026-09-29): the user approved with the suggested answers:
+
+1. Reopen nixarchy #953 and carry a patch there. That is separate work in the nixarchy repo under its own AGENTS.md and workflow, and it is not done from this repo. This repo links to it.
+2. Scope here: docs and procedure only. No HM activation step.
