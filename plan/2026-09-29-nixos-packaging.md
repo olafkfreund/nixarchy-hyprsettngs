@@ -182,6 +182,17 @@ blast radius is smaller.
       - `devenv shell -- node test/live.js` is clean against the running
         Hyprland.
 
+    **Deviation (implemented):** `test/run.js` read the user's real
+    `~/.config/hypr/hyprland.lua` for the hook test, so it failed in the Nix
+    sandbox. It now reads `test/hyprland.fixture.lua` (the stock require
+    layout). This is the same class of fix as B1.
+
+    **Found, not fixed (out of scope):** `node test/live.js` fails its
+    "kitchen sink" case on `main` as well: Hyprland here rejects
+    `input:accel_profile = ""`, which `Schema.js:280` offers as "Default". The
+    eval dry-run blocks it, so it is safe, but "Default" can't be chosen. It
+    needs its own approval.
+
 11. **Runtime on this host**: see Tests. If a live check fails, fix it in the
     step that caused it, and record any deviation in this plan in the same
     commit.

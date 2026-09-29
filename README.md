@@ -1,4 +1,13 @@
-# Hyprforge
+# nixarchy-hyprsetting
+
+**Hyprforge**, the Hyprland studio for Omarchy, packaged for NixOS
+([Nixarchy](https://github.com/olafkfreund/nixarchy)) with a flake and a Home
+Manager module. Hyprforge was created by **Aziz
+([AbdulazizAlwabel](https://github.com/AbdulazizAlwabel))**. The original
+project is at
+[github.com/AbdulazizAlwabel/omarchy-hyprforge](https://github.com/AbdulazizAlwabel/omarchy-hyprforge).
+The plugin keeps its original id (`aziz.hyprforge`) and commands, so
+everything below applies unchanged.
 
 A Hyprland studio for [Omarchy](https://omarchy.org). Every visual and behavioural
 knob Hyprland has, with a live scale model of your desktop, theme-aware colors,
@@ -8,6 +17,37 @@ previews instantly on your real windows and is checked by Hyprland before it's s
 ![Hyprforge](preview.png)
 
 ## Install
+
+### NixOS / Home Manager
+
+Add the flake and enable the module:
+
+```nix
+# flake.nix
+inputs.nixarchy-hyprsetting.url = "github:olafkfreund/nixarchy-hyprsettngs";
+
+# Home Manager configuration
+imports = [ inputs.nixarchy-hyprsetting.homeManagerModules.default ];
+programs.nixarchy-hyprsetting.enable = true;
+```
+
+This links the plugin into `~/.config/omarchy/plugins/aziz.hyprforge`. After
+the first switch, enable it once, and restart the shell after every update:
+
+```bash
+omarchy plugin enable aziz.hyprforge   # recorded in ~/.config/omarchy/shell.json
+omarchy restart shell
+```
+
+If the plugin was installed before with `omarchy plugin add`, move that copy
+aside before the first switch, because Home Manager won't replace a real
+directory. Your settings live in `~/.config/hypr/hyprforge/` and are kept:
+
+```bash
+mv ~/.config/omarchy/plugins/aziz.hyprforge ~/.config/omarchy/plugins/aziz.hyprforge.bak
+```
+
+### Other systems (upstream)
 
 ```bash
 omarchy plugin add https://github.com/AbdulazizAlwabel/omarchy-hyprforge --enable --yes
@@ -164,6 +204,23 @@ test/live.js         node test/live.js  — dry-runs every preset in the running
 ```
 
 Plugin QML is cached by URL, so after editing run `omarchy restart shell`.
+
+A [devenv](https://devenv.sh) shell provides `node` and `lua`. Run
+`devenv allow` once, then:
+
+```bash
+devenv shell -- test        # node test/run.js (offline; also run by `nix flake check`)
+devenv shell -- test-live   # node test/live.js (needs a running Omarchy)
+nix build .#default         # the plugin as installed by the Home Manager module
+```
+
+## Credits
+
+Hyprforge is the work of **Aziz
+([AbdulazizAlwabel](https://github.com/AbdulazizAlwabel))**:
+[github.com/AbdulazizAlwabel/omarchy-hyprforge](https://github.com/AbdulazizAlwabel/omarchy-hyprforge).
+This repository adds NixOS packaging and some fixes on top of it. Please
+report problems with the plugin itself upstream.
 
 ## License
 

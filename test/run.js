@@ -139,7 +139,7 @@ for (const m of Engine.MOTIONS) {
 
 // 4. hook insertion
 {
-  const src = fs.readFileSync(path.join(os.homedir(), ".config/hypr/hyprland.lua"), "utf8")
+  const src = fs.readFileSync(path.join(__dirname, "hyprland.fixture.lua"), "utf8")
   const hooked = Engine.addHook(Engine.removeHook(src))
   const lines = hooked.split("\n")
   const hook = lines.findIndex(l => l.includes('"hypr.hyprforge"'))
