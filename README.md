@@ -6,7 +6,8 @@ Manager module. Hyprforge was created by **Aziz
 ([AbdulazizAlwabel](https://github.com/AbdulazizAlwabel))**. The original
 project is at
 [github.com/AbdulazizAlwabel/omarchy-hyprforge](https://github.com/AbdulazizAlwabel/omarchy-hyprforge).
-The plugin keeps its original id (`aziz.hyprforge`) and commands, so
+On the desktop it appears as **Nixarchy Hyprland Settings**. It keeps its original id
+(`aziz.hyprforge`), commands and file paths, so
 everything below applies unchanged.
 
 A Hyprland studio for [Omarchy](https://omarchy.org). Every visual and behavioural
@@ -14,7 +15,7 @@ knob Hyprland has, with a live scale model of your desktop, theme-aware colors,
 an animation curve editor, per-app rules, profiles and full history. Everything
 previews instantly on your real windows and is checked by Hyprland before it's saved.
 
-![Hyprforge](preview.png)
+![Nixarchy Hyprland Settings](preview.png)
 
 ## Install
 
@@ -72,9 +73,9 @@ mv ~/.config/omarchy/plugins/aziz.hyprforge ~/aziz.hyprforge.old
 omarchy plugin add https://github.com/AbdulazizAlwabel/omarchy-hyprforge --enable --yes
 ```
 
-Open it with **SUPER+SPACE › Hyprforge** or `omarchy-shell hyprforge toggle`.
+Open it with **SUPER+SPACE › Nixarchy Hyprland Settings** or `omarchy-shell hyprforge toggle`.
 
-**First run — one line, only with your consent.** Hyprforge writes its settings to
+**First run — one line, only with your consent.** Nixarchy Hyprland Settings writes its settings to
 its own file, `~/.config/hypr/hyprforge.lua`. Hyprland only reads that file once
 `~/.config/hypr/hyprland.lua` loads it, so the panel shows a **Connect** button
 the first time. Clicking it adds a single optional-require line. A full backup
@@ -155,7 +156,7 @@ sets this one up for you). Check `hyprctl binds` first: upstream suggests
 SUPER+ALT+P, which other plugins often use already.
 
 ```lua
-o.bind("SUPER + ALT + SHIFT + P", "Next Hyprforge profile", "omarchy-shell hyprforge cycleProfile")
+o.bind("SUPER + ALT + SHIFT + P", "Next Nixarchy Hyprland Settings profile", "omarchy-shell hyprforge cycleProfile")
 ```
 
 ## How it works and why it's safe
@@ -174,7 +175,7 @@ o.bind("SUPER + ALT + SHIFT + P", "Next Hyprforge profile", "omarchy-shell hyprf
   good state is restored automatically. (A reload-time config error can make
   Hyprland draw its error bar, which on some systems freezes the compositor —
   that is why validation happens first.)
-* **File safety.** Every file Hyprforge writes (its state, history, generated
+* **File safety.** Every file Nixarchy Hyprland Settings writes (its state, history, generated
   Lua and snapshot, the launcher entry, and the one-time `hyprland.lua` edit)
   is written to a fresh `mktemp` file and renamed into place, so a symlink is
   never written through, and backups complete before the edit they protect.
@@ -191,7 +192,7 @@ Turn **Menu › Style › Hyprland** into a submenu by adding this to
 
 ```jsonc
 "style.hyprland": {"icon":"","label":"Hyprland","aliases":["hyprland","looknfeel"]},
-"style.hyprland.hyprforge": {"icon":"󱌣","label":"Hyprforge Studio","aliases":["hyprforge"],"action":"omarchy-shell shell toggle aziz.hyprforge '{}'"},
+"style.hyprland.hyprforge": {"icon":"󱌣","label":"Nixarchy Hyprland Settings","aliases":["hyprforge"],"action":"omarchy-shell shell toggle aziz.hyprforge '{}'"},
 "style.hyprland.edit": {"icon":"󰏫","label":"Edit looknfeel.lua","action":"omarchy-launch-config-editor \"$HOME/.config/hypr/looknfeel.lua\""}
 ```
 
@@ -199,7 +200,7 @@ A key to open it, in `~/.config/hypr/bindings.lua` (also set up by the Home
 Manager module):
 
 ```lua
-o.bind("SUPER + ALT + H", "Hyprforge", "omarchy-shell shell toggle aziz.hyprforge '{}'")
+o.bind("SUPER + ALT + H", "Nixarchy Hyprland Settings", "omarchy-shell shell toggle aziz.hyprforge '{}'")
 ```
 
 ## For AI agents

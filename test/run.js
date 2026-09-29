@@ -148,6 +148,11 @@ for (const m of Engine.MOTIONS) {
   check(hook > autostart && hook < toggles, "hook placed between user modules and toggles")
   check(Engine.addHook(hooked) === hooked, "hook idempotent")
   check(Engine.removeHook(hooked) === Engine.removeHook(src), "hook removal restores")
+  // Installs connected before the rename carry the old comment on the hook line.
+  const legacy = src + '\nrequire("default.hypr.require_optional").module("hypr.hyprforge") -- Hyprforge (Omarchy plugin)\n'
+  check(Engine.hasHook(legacy), "legacy hook line recognised")
+  check(!Engine.removeHook(legacy).includes("hypr.hyprforge"), "legacy hook line removed")
+  check(Engine.addHook(legacy) === legacy, "no second hook added next to a legacy one")
 }
 
 // 5. value helpers

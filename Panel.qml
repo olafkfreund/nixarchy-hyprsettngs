@@ -516,7 +516,7 @@ Item {
 
   function importText(text) {
     if (String(text).length > root.importLimit) {
-      root.errorText = "The clipboard holds more than 1 MB, which is far too big for a Hyprforge profile."
+      root.errorText = "The clipboard holds more than 1 MB, which is far too big for a Nixarchy Hyprland Settings profile."
       return
     }
     try {
@@ -531,7 +531,7 @@ Item {
       saveState()
       flash("Imported profile “" + n + "”")
     } catch (e) {
-      root.errorText = "The clipboard doesn't hold a Hyprforge profile."
+      root.errorText = "The clipboard doesn't hold a Nixarchy Hyprland Settings profile."
     }
   }
 
@@ -1443,7 +1443,9 @@ Item {
             Layout.fillWidth: true
             spacing: 0
             Text {
-              text: "Hyprforge"
+              text: "Nixarchy Hyprland Settings"
+              Layout.fillWidth: true
+              elide: Text.ElideRight
               color: root.fg
               font.family: root.font
               font.pixelSize: Style.font.heading
@@ -1492,7 +1494,7 @@ Item {
             spacing: Style.spacing.lg
             Text {
               Layout.fillWidth: true
-              text: "Hyprland isn't loading Hyprforge yet. Connecting adds one line to ~/.config/hypr/hyprland.lua (a backup is kept)."
+              text: "Hyprland isn't loading Nixarchy Hyprland Settings yet. Connecting adds one line to ~/.config/hypr/hyprland.lua (a backup is kept)."
               color: root.fg
               font.family: root.font
               font.pixelSize: Style.font.bodySmall

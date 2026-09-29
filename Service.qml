@@ -40,7 +40,7 @@ QtObject {
   readonly property string desktopText: [
     "[Desktop Entry]",
     "Type=Application",
-    "Name=Hyprforge",
+    "Name=Nixarchy Hyprland Settings",
     "GenericName=Hyprland Studio",
     "Comment=Customize Hyprland: gaps, borders, colors, blur, shadows, animations, app rules and profiles",
     "Exec=omarchy-shell shell toggle " + pluginId + " {}",
@@ -49,7 +49,7 @@ QtObject {
     "Terminal=false",
     "StartupNotify=false",
     "Categories=Settings;DesktopSettings;",
-    "Keywords=hyprland;omarchy;gaps;blur;opacity;animations;rounding;shadow;border;theme;window;rules;",
+    "Keywords=nixarchy;hyprforge;settings;hyprland;omarchy;gaps;blur;opacity;animations;rounding;shadow;border;theme;window;rules;",
     "X-Hyprforge-Managed=true",
     ""
   ].join("\n")
@@ -106,7 +106,7 @@ QtObject {
   property var cachedProfiles: []
 
   function withState(fn) {
-    if (panelBusy) { notify("Hyprforge is saving; try again in a moment", true); return }
+    if (panelBusy) { notify("Nixarchy Hyprland Settings is saving; try again in a moment", true); return }
     ops = ops.concat([fn])
     if (!opBusy) nextOp()
   }
@@ -243,7 +243,7 @@ QtObject {
   }
 
   function notify(text, critical) {
-    Quickshell.execDetached(["notify-send", "-a", "Hyprforge", "-t", critical ? "6000" : "1800"].concat(critical ? ["-u", "critical"] : []).concat(["Hyprforge", text]))
+    Quickshell.execDetached(["notify-send", "-a", "Nixarchy Hyprland Settings", "-t", critical ? "6000" : "1800"].concat(critical ? ["-u", "critical"] : []).concat(["Nixarchy Hyprland Settings", text]))
   }
 
   // validate -> `hyprctl eval` dry-run -> write state + history + lua -> reload
