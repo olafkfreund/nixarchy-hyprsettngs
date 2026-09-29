@@ -35,17 +35,29 @@ function clone(v) {
   return v === undefined ? undefined : JSON.parse(JSON.stringify(v))
 }
 
+// The four-field config view, without copying and without touching the input.
+// Read-only callers use this; normalize() is the copying version for snapshots.
+function shape(cfg) {
+  var c = cfg && typeof cfg === "object" ? cfg : {}
+  return {
+    options: c.options && typeof c.options === "object" ? c.options : {},
+    anims: c.anims && typeof c.anims === "object" ? c.anims : {},
+    curves: c.curves && typeof c.curves === "object" ? c.curves : {},
+    rules: Array.isArray(c.rules) ? c.rules : []
+  }
+}
+
 function normalize(cfg) {
-  var c = cfg && typeof cfg === "object" ? clone(cfg) : {}
-  if (!c.options || typeof c.options !== "object") c.options = {}
-  if (!c.anims || typeof c.anims !== "object") c.anims = {}
-  if (!c.curves || typeof c.curves !== "object") c.curves = {}
-  if (!Array.isArray(c.rules)) c.rules = []
-  return { options: c.options, anims: c.anims, curves: c.curves, rules: c.rules }
+  return shape(clone(cfg))
+}
+
+// Cap a command's stdout before it reaches QML (StdioCollector keeps all of it).
+function capped(cmd, bytes) {
+  return ["sh", "-c", '"$@" | head -c ' + Math.floor(bytes), "sh"].concat(cmd)
 }
 
 function isEmpty(cfg) {
-  var c = normalize(cfg)
+  var c = shape(cfg)
   return Object.keys(c.options).length === 0 && Object.keys(c.anims).length === 0
     && Object.keys(c.curves).length === 0 && c.rules.length === 0
 }
@@ -172,7 +184,7 @@ function checkValue(type, v) {
 
 // typeOf(key) -> type string or "" when unknown. Returns [{ key, problem }].
 function validate(cfgIn, typeOf) {
-  var cfg = normalize(cfgIn)
+  var cfg = shape(cfgIn)
   var out = []
   for (var key in cfg.options) {
     if (!/^[A-Za-z0-9_-]+(:[A-Za-z0-9_.-]+)+$/.test(key)) { out.push({ key: key, problem: "not a valid option name" }); continue }
@@ -784,7 +796,7 @@ function renderRules(cfg) {
 //   preview  omit rules and the base snapshot; that text goes to `hyprctl eval`,
 //            where re-registering rules would stack duplicates until reload.
 function render(cfgIn, ctx) {
-  var cfg = normalize(cfgIn)
+  var cfg = shape(cfgIn)
   ctx = ctx || {}
   var chunks = []
   var needsPalette = false
@@ -821,7 +833,11 @@ var HEADER = [
 ].join("\n")
 
 function renderFile(cfg, ctx) {
-  var body = render(cfg, ctx)
+  return wrapFile(render(cfg, ctx))
+}
+
+// The file text around an already rendered body, so callers render once.
+function wrapFile(body) {
   return HEADER + "\n\n" + (body ? body + "\n" : "-- Nothing overridden: Omarchy defaults and your own files apply.\n")
 }
 
@@ -1090,7 +1106,7 @@ function curveSamples(curve, n) {
 }
 
 function curveByName(name, cfg, baseline) {
-  var c = normalize(cfg)
+  var c = shape(cfg)
   if (c.curves[name]) return c.curves[name]
   if (baseline && baseline.curves) for (var i = 0; i < baseline.curves.length; i++)
     if (baseline.curves[i].name === name) return baseline.curves[i]
@@ -1102,7 +1118,7 @@ function curveNames(cfg, baseline) {
   var names = ["default"]
   if (baseline && baseline.curves) for (var i = 0; i < baseline.curves.length; i++)
     if (names.indexOf(baseline.curves[i].name) === -1) names.push(baseline.curves[i].name)
-  var custom = Object.keys(normalize(cfg).curves).sort()
+  var custom = Object.keys(shape(cfg).curves).sort()
   for (var j = 0; j < custom.length; j++) if (names.indexOf(custom[j]) === -1) names.push(custom[j])
   return names
 }
@@ -1111,7 +1127,7 @@ function curveNames(cfg, baseline) {
 
 // Which catalogue keys differ between two configs (for history labels).
 function diffKeys(a, b) {
-  var x = normalize(a), y = normalize(b)
+  var x = shape(a), y = shape(b)
   var out = []
   var keys = {}
   for (var k in x.options) keys[k] = true

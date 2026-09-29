@@ -175,5 +175,18 @@ check(Engine.parsePalette('accent = "#a88bff"\nred = "#ff6f91"').length === 2, "
   }
 }
 
+// 7. render never mutates its input, and wrapFile(render) === renderFile
+{
+  const cases = Engine.LOOKS.map(l => ({ options: Object.assign({}, l.options, l.extra || {}) }))
+    .concat(Engine.MOTIONS.map(m => ({ anims: m.anims })))
+  for (const cfg of cases) {
+    const before = JSON.stringify(cfg)
+    const body = Engine.render(cfg, { baseline })
+    check(JSON.stringify(cfg) === before, "render left its input unchanged")
+    check(Engine.wrapFile(body) === Engine.renderFile(cfg, { baseline }), "wrapFile(render) matches renderFile")
+  }
+  check(JSON.stringify(Engine.shape({ options: 1 })) === JSON.stringify(Engine.defaultConfig()), "shape fills malformed fields")
+}
+
 if (failures) { console.log(`\n${failures} failure(s)`); process.exit(1) }
 console.log("all good")
