@@ -32,7 +32,7 @@ Run `devenv allow` once in a fresh clone.
 
 | Path | What |
 |---|---|
-| `manifest.json` | Plugin id `aziz.hyprforge`, kinds panel + service |
+| `manifest.json` | Plugin id `nixarchy.hyprlandsettings`, kinds panel + service |
 | `Panel.qml` | The UI, the live-preview/commit pipeline, keyboard, Connect/Disconnect hook |
 | `Service.qml` | Headless half: launcher entry, and the `omarchy-shell hyprforge …` IPC |
 | `Schema.js` | The curated option catalogue (sections, items, `hf:*` synthetic keys) |
@@ -48,7 +48,8 @@ Run `devenv allow` once in a fresh clone.
 
 ## Invariants: do not weaken these
 
-1. **Contract with existing installs.** The id `aziz.hyprforge`, the IPC
+1. **Contract with existing installs.** The id `nixarchy.hyprlandsettings` (it replaced
+   `aziz.hyprforge`; see the README's migration steps), the IPC
    target `hyprforge`, the Lua module `hypr.hyprforge`, the paths
    `~/.config/hypr/hyprforge.lua`, `~/.config/hypr/hyprforge/`
    (`state.json`, `history.json`) and `~/.cache/hyprforge/`, the
@@ -77,6 +78,18 @@ Run `devenv allow` once in a fresh clone.
 8. **`Engine.normalize` returns a copy.** Snapshots (`lastGood`, profiles,
    history, undo) depend on it. `Engine.shape` doesn't copy and is for
    read-only callers.
+9. **Never restart the shell right after changing plugin folders.** A
+   folder change makes the running shell hot-reload, and it stops answering
+   IPC for up to about 30 s. An `omarchy restart shell` in that window can
+   leave **no shell at all**: upstream's `timeout 5` kill loop, nixarchy
+   #953. This took p620's bar down for 17 minutes on 2026-09-29. After
+   installing, updating or removing: run
+   `omarchy-shell shell rescanPlugins`, then
+   `until omarchy-shell shell ping >/dev/null 2>&1; do sleep 1; done`. If a
+   restart is unavoidable, wait for idle, keep its output, and check `ping`
+   afterwards. Move old plugin copies **out of**
+   `~/.config/omarchy/plugins`: a renamed copy left inside is still
+   discovered, and shadows the real install.
 
 ## How changes are made
 
