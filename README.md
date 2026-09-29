@@ -1,4 +1,13 @@
-# Hyprforge
+# nixarchy-hyprsetting
+
+**Hyprforge**, the Hyprland studio for Omarchy, packaged for NixOS
+([Nixarchy](https://github.com/olafkfreund/nixarchy)) with a flake and a Home
+Manager module. Hyprforge was created by **Aziz
+([AbdulazizAlwabel](https://github.com/AbdulazizAlwabel))**. The original
+project is at
+[github.com/AbdulazizAlwabel/omarchy-hyprforge](https://github.com/AbdulazizAlwabel/omarchy-hyprforge).
+The plugin keeps its original id (`aziz.hyprforge`) and commands, so
+everything below applies unchanged.
 
 A Hyprland studio for [Omarchy](https://omarchy.org). Every visual and behavioural
 knob Hyprland has, with a live scale model of your desktop, theme-aware colors,
@@ -8,6 +17,56 @@ previews instantly on your real windows and is checked by Hyprland before it's s
 ![Hyprforge](preview.png)
 
 ## Install
+
+### NixOS / Home Manager
+
+Add the flake and enable the module:
+
+```nix
+# flake.nix
+inputs.nixarchy-hyprsetting.url = "github:olafkfreund/nixarchy-hyprsettngs";
+
+# Home Manager configuration
+imports = [ inputs.nixarchy-hyprsetting.homeManagerModules.default ];
+programs.nixarchy-hyprsetting.enable = true;
+```
+
+This links the plugin into `~/.config/omarchy/plugins/aziz.hyprforge` and
+writes its keybindings to `~/.config/hypr/hyprforge-binds.lua`:
+
+| Option | Default | Does |
+|---|---|---|
+| `keybindings.open` | `"SUPER + ALT + H"` | open the panel |
+| `keybindings.cycleProfile` | `"SUPER + ALT + SHIFT + P"` | apply the next saved profile |
+
+Set either to `null` to leave it out. Home Manager never edits your own
+`bindings.lua`. Add this line to it once to load the keys (`pcall` keeps
+Hyprland working if the file ever goes away):
+
+```lua
+pcall(require, "hypr.hyprforge-binds")
+```
+
+After
+the first switch, enable it once, and restart the shell after every update:
+
+```bash
+omarchy plugin enable aziz.hyprforge   # recorded in ~/.config/omarchy/shell.json
+omarchy restart shell
+```
+
+If the plugin was installed before with `omarchy plugin add`, move that copy
+**out of the plugins directory** before the first switch. Home Manager won't
+replace a real directory, and a copy left anywhere under
+`~/.config/omarchy/plugins/` (even renamed) is still found by its manifest,
+so Omarchy would keep loading the old copy. Your settings live in
+`~/.config/hypr/hyprforge/` and are kept:
+
+```bash
+mv ~/.config/omarchy/plugins/aziz.hyprforge ~/aziz.hyprforge.old
+```
+
+### Other systems (upstream)
 
 ```bash
 omarchy plugin add https://github.com/AbdulazizAlwabel/omarchy-hyprforge --enable --yes
@@ -90,10 +149,12 @@ omarchy-shell hyprforge unset decoration:rounding
 omarchy-shell hyprforge reset                   # back to stock
 ```
 
-Example binding for `~/.config/hypr/bindings.lua`:
+Example binding for `~/.config/hypr/bindings.lua` (the Home Manager module
+sets this one up for you). Check `hyprctl binds` first: upstream suggests
+SUPER+ALT+P, which other plugins often use already.
 
 ```lua
-o.bind("SUPER + ALT + P", "Next Hyprforge profile", "omarchy-shell hyprforge cycleProfile")
+o.bind("SUPER + ALT + SHIFT + P", "Next Hyprforge profile", "omarchy-shell hyprforge cycleProfile")
 ```
 
 ## How it works and why it's safe
@@ -133,7 +194,8 @@ Turn **Menu › Style › Hyprland** into a submenu by adding this to
 "style.hyprland.edit": {"icon":"󰏫","label":"Edit looknfeel.lua","action":"omarchy-launch-config-editor \"$HOME/.config/hypr/looknfeel.lua\""}
 ```
 
-A key to open it, in `~/.config/hypr/bindings.lua`:
+A key to open it, in `~/.config/hypr/bindings.lua` (also set up by the Home
+Manager module):
 
 ```lua
 o.bind("SUPER + ALT + H", "Hyprforge", "omarchy-shell shell toggle aziz.hyprforge '{}'")
@@ -164,6 +226,23 @@ test/live.js         node test/live.js  — dry-runs every preset in the running
 ```
 
 Plugin QML is cached by URL, so after editing run `omarchy restart shell`.
+
+A [devenv](https://devenv.sh) shell provides `node` and `lua`. Run
+`devenv allow` once, then:
+
+```bash
+devenv shell -- test        # node test/run.js (offline; also run by `nix flake check`)
+devenv shell -- test-live   # node test/live.js (needs a running Omarchy)
+nix build .#default         # the plugin as installed by the Home Manager module
+```
+
+## Credits
+
+Hyprforge is the work of **Aziz
+([AbdulazizAlwabel](https://github.com/AbdulazizAlwabel))**:
+[github.com/AbdulazizAlwabel/omarchy-hyprforge](https://github.com/AbdulazizAlwabel/omarchy-hyprforge).
+This repository adds NixOS packaging and some fixes on top of it. Please
+report problems with the plugin itself upstream.
 
 ## License
 

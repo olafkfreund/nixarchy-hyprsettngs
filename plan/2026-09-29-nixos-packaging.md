@@ -1,0 +1,326 @@
+---
+status: approved
+issue: none (issues are disabled on this repo)
+spec: spec/2026-09-29-nixos-packaging.md
+---
+
+# Plan: Rename to nixarchy-hyprsetting and package for NixOS
+
+Branch `feat/nixos-packaging`. One commit per step, and each commit message
+names its step.
+
+## Decisions carried from the approved spec
+
+- **README only** is renamed to "nixarchy-hyprsetting". Plugin id
+  `aziz.hyprforge`, IPC `omarchy-shell hyprforge`, state paths,
+  `manifest.json`, launcher entry and `LICENSE` are unchanged.
+- The README links https://github.com/AbdulazizAlwabel/omarchy-hyprforge and
+  credits Aziz (AbdulazizAlwabel) as the original author. The upstream install
+  line stays, labelled "non-NixOS".
+- `flake.nix`: nixpkgs (nixos-unstable) only, for x86_64-linux and
+  aarch64-linux. It provides:
+  - `packages.default`, a copy of the plugin files;
+  - `homeManagerModules.default`, which sets
+    `programs.nixarchy-hyprsetting.{enable,package}` and links
+    `xdg.configFile."omarchy/plugins/aziz.hyprforge".source` as one directory
+    symlink. It never writes `shell.json` and adds no `lua` (Hyprland already
+    brings it);
+  - `checks.default`, which runs `node test/run.js`.
+- devenv: plain `devenv.nix` + `devenv.yaml`. It provides `nodejs` and `lua`,
+  and the scripts `test` and `test-live`. No `.envrc`.
+- Every confirmed review finding is fixed: B1–B8 and E1–E7. These are **not**
+  changed:
+  - the getoption regex;
+  - the drag-end undo;
+  - the `refreshLive` batch;
+  - `.bak.hyprforge-*` pruning.
+- B4 policy: while the panel is committing, the service refuses IPC changes
+  and notifies. While a service op runs, the panel defers its commit. If both
+  happen, the service's change wins.
+- Migration: the copied `~/.config/omarchy/plugins/aziz.hyprforge` is moved
+  aside once before the first HM switch. User state in
+  `~/.config/hypr/hyprforge/` is untouched.
+
+### Refinement of spec E2 (needs your OK with this plan)
+
+The spec said `normalize` should stop cloning and that callers which mutate
+should clone. There are 25 call sites in `Panel.qml`/`Service.qml` that use
+`normalize` as a **snapshot** (`lastGood`, profiles, history, undo). Changing
+its meaning there risks aliasing bugs in the rollback path. Instead:
+`normalize` keeps cloning. A new non-cloning `shape(cfg)` is used by the six
+read-only Engine callers (`render`, `validate`, `isEmpty`, `curveByName`,
+`curveNames`, `diffKeys`), which are the hot ones: `render` runs on every
+preview frame. The goal (no JSON round-trip on hot paths) is the same; the
+blast radius is smaller.
+
+## Steps
+
+1. **devenv**: add `devenv.nix` (`packages = [ pkgs.nodejs pkgs.lua ]`,
+   `scripts.test.exec = "node test/run.js"`,
+   `scripts.test-live.exec = "node test/live.js"`) and `devenv.yaml`. Run
+   `devenv allow` (with the user's consent, given by this approval) and
+   `devenv shell -- node --version`, which writes `devenv.lock`. Commit all
+   three plus devenv's `.gitignore`.
+   → verify: `devenv info` lists nodejs and lua.
+
+2. **B1**: in `test/run.js` and `test/live.js`, resolve
+   `looknfeel.lua` from `process.env.OMARCHY_PATH || "/usr/share/omarchy"`.
+   In `run.js`, if the file is missing, print `skip: baseline (no Omarchy)`
+   and use an empty baseline; the baseline check runs only when the file
+   exists. `live.js` fails with a clear message if the file is missing, since
+   it needs a live Omarchy anyway.
+   → verify: `devenv shell -- node test/run.js` has 0 failures (was 1).
+
+3. **E2 (refined) + E1 + E7, Engine.js**:
+   - Add `shape(cfg)`: the current `normalize` body without `clone`. Then
+     `normalize(cfg) = shape(clone(cfg))`. Point the six read-only callers at
+     `shape`.
+   - Add `wrapFile(body)`. `renderFile(cfg, ctx)` becomes
+     `wrapFile(render(cfg, ctx))`.
+   - Add `capped(cmd, bytes)`, moved verbatim from Panel/Service.
+   - Add checks to `test/run.js`: `render` leaves its input deep-equal to a
+     prior clone for every preset, and `wrapFile(render(x)) === renderFile(x)`.
+   → verify: `node test/run.js` passes.
+
+4. **E1 + E7 callers**:
+   - `Service.finish` computes `body = render(...)` once and sets
+     `p.lua = wrapFile(body)`.
+   - `Panel.persistNow` stores the rendered body on
+     `root.commitBody`, and the commit/eval path reuses it instead of
+     re-rendering.
+   - Replace both local `capped` functions with `Engine.capped`.
+   → verify: `grep -c "renderFile\|render(" Panel.qml Service.qml` drops;
+   tests pass.
+
+5. **B5 + B6, baseline.lua**:
+   - `num()` returns `null` for NaN and `±math.huge`.
+   - Curve emission: skip a curve whose spec isn't a table, and a bezier
+     whose `points` aren't two two-number tables. The skip is done by
+     wrapping each entry's `string.format` in `pcall`.
+   - Add to `test/run.js`: feed a temp Lua file with a bad `points` and an
+     `inf` speed, then assert the output parses as JSON and still lists the
+     good entries.
+   → verify: tests pass.
+
+6. **E3, SafeWriter.qml**:
+   - `d=${1%/*}` and `n=${1##*/}` replace `dirname`/`basename`.
+   - Add `property bool swept: false`. The stale-temp `find` runs only when
+     arg `$3` is `1`, which `next()` passes on the first job and then sets
+     `swept = true`.
+   - The `-mmin +2` and exact-name guards stay.
+   **Deviation (implemented):** the sweep runs once per *directory* per
+   writer (a `swept` map keyed by directory), not once per writer. A writer
+   writes into `~/.config/hypr`, `~/.config/hypr/hyprforge` and
+   `~/.local/share/applications`, and a per-writer flag would skip the others.
+   → verify: `sh -n` on the script text, and run it against a temp dir: it
+   sweeps only when `$3=1`, replaces a symlink instead of following it, and
+   writes `.bak`. Runtime check in step 10.
+
+7. **B2 + B3 + B7, Service.qml**:
+   - B2: add `abort(prefix)` to SafeWriter to drop queued jobs. In
+     `writer.onWritten`, if a state or history write fails during an op, drop
+     that op's remaining writes, call `stateWritten()` and `opDone()`, and
+     notify "not applied".
+   - B3: `set()` pushes a `withState` op that runs `checkProc` for that key.
+     The `checkProc` handler applies the change inside the same op (or calls
+     `opDone()` on rejection). Remove `pendingSet`.
+   - B7: in `baselineProc`, if the output is empty or doesn't parse,
+     `notify("Could not read Omarchy's animations; not applied", true)`,
+     clear `pending` and call `opDone()`.
+   **Deviation (implemented):** B2 aborts only on a failed **state** write,
+   and `abort()` takes no prefix: the service writer holds only the current
+   op's jobs. A failed history write is reported and the op continues. At that
+   point `state.json` has already landed, so aborting would skip the Lua write
+   and cause the state/Lua mismatch B2 exists to prevent. B3 keeps a
+   `pendingSet` slot, which now carries the op's state; it is safe because ops
+   are serial.
+   → verify: tests pass. Runtime check in step 10.
+
+8. **B4, Service ↔ Panel**:
+   - Service: add `property bool panelBusy: false`. `run()` returns early
+     with a notice while `panelBusy` is true.
+   - Panel: add `Binding { target: root.service; property: "panelBusy";
+     value: root.committing; when: root.service !== null }`. At the top of
+     `persistNow`, if `root.service && root.service.opBusy`, call
+     `schedulePersist()` and return. The existing `stateStale` re-read adopts
+     the service's result.
+   **Deviation (implemented):** the guard is in `withState`, so it covers
+   every script op and not only `run()`. The panel does not retry through
+   `schedulePersist()`, because the pending timer would mark the service's
+   write as stale and the panel's commit would then overwrite it. Instead it
+   sets `waitService`. When `opBusy` clears, it re-reads `state.json`: a
+   changed file is adopted (the service wins, as specced), and an unchanged
+   file means the panel's own edit is committed.
+   → verify: runtime check in step 10.
+
+9. **E4 + E5 + E6 + B8, Panel.qml**:
+   - E4: `buildAllItems` also builds `root.typeByKey`, and `typeOf` uses it.
+   - E5: add `readonly property var lookCanon` and `motionCanon`, which hold
+     the presets' canonical strings computed once. `activeLook` and
+     `activeMotion` compare against them.
+   - E6: `buildAllItems` stores `it._hay = (key+" "+label+" "+desc)
+     .toLowerCase()` on a shallow copy. Schema items are shared, so this can't
+     mutate them. `computeRows` uses `_hay`.
+   - B8: add `trap 'rm -f -- "$new"' EXIT` after `new=$(mktemp …)` in
+     `hookScript`, cleared with `trap - EXIT` after the `mv`.
+   **Deviation (implemented):** E6 uses a parallel `allHay` array (same
+   index as `allItemsCache`), not `_hay` on copied items. Copies would change
+   item identity for `Schema.search` and the option rows.
+   → verify: tests pass. `qmllint Panel.qml` shows no new warnings, if
+   qmllint is available.
+
+10. **flake + HM module + README**:
+    - Write `flake.nix` as decided. Run `nix flake lock`.
+    - README: new title, intro with credit and link, a "NixOS / Home Manager"
+      install section with the one-time `mv` migration and
+      `omarchy restart shell`, a "Credits" section, and a devenv note under
+      Development.
+    → verify:
+      - `nix flake check` is green;
+      - `nix build .#default && ls result` shows no test/intent/spec/plan/Nix
+        files;
+      - `devenv shell -- node test/live.js` is clean against the running
+        Hyprland.
+
+    **Deviation (implemented):** `test/run.js` read the user's real
+    `~/.config/hypr/hyprland.lua` for the hook test, so it failed in the Nix
+    sandbox. It now reads `test/hyprland.fixture.lua` (the stock require
+    layout). This is the same class of fix as B1.
+
+    **Found, not fixed (out of scope):** `node test/live.js` fails its
+    "kitchen sink" case on `main` as well: Hyprland here rejects
+    `input:accel_profile = ""`, which `Schema.js:280` offers as "Default". The
+    eval dry-run blocks it, so it is safe, but "Default" can't be chosen. It
+    needs its own approval.
+
+11. **Runtime on this host**: see Tests. If a live check fails, fix it in the
+    step that caused it, and record any deviation in this plan in the same
+    commit.
+
+## Tests
+
+- `devenv shell -- node test/run.js`: 0 failures.
+- `devenv shell -- node test/live.js`: every preset dry-runs clean.
+- `nix flake check`: passes.
+- Runtime, after `mv ~/.config/omarchy/plugins/aziz.hyprforge ~/aziz.hyprforge.old`
+  (out of the plugins dir; see the step 11 correction) and
+  wiring the HM module into the user's config (or, before that, a manual
+  `ln -s $(nix build --print-out-paths) …` for a dry test), then
+  `omarchy restart shell`:
+  - open the panel and drag a slider: `state.json` and `hyprforge.lua`
+    update, with one undo step;
+  - `omarchy-shell hyprforge set decoration:rounding 12; omarchy-shell
+    hyprforge set decoration:border_size 3`: both apply;
+  - `omarchy-shell hyprforge profile <name>` while the panel is committing:
+    a notice appears and nothing is lost;
+  - `omarchy-shell hyprforge reset` returns to stock.
+
+## Rollback
+
+- Code: `git revert` the step commits, or drop the branch. `main` is
+  untouched until merge.
+- Host: remove the HM module line and switch, then
+  `mv ~/aziz.hyprforge.old ~/.config/omarchy/plugins/aziz.hyprforge` and
+  `omarchy restart shell`.
+  User state in `~/.config/hypr/hyprforge/` is never touched by this change.
+
+## Step 11 results (2026-09-29)
+
+- The plugin loaded from the store build (a symlink to the `nix build`
+  output), and the shell listed `aziz.hyprforge` as enabled.
+- Two back-to-back `set` calls both landed in `state.json` and
+  `hyprforge.lua` (B3). No stray temp files were left. `configerrors` was
+  empty.
+- The live values stayed at 6/5 because the user's Omarchy toggle
+  `opinionated-looks.lua` loads after Hyprforge and wins. This is by design
+  (README: toggles still work). A direct `hyprctl eval` of the same setting
+  applies 12.
+- Restored afterwards with `unset` ×2. `state.json` cfg and `hyprforge.lua`
+  are byte-identical to the backups, and the original plugin copy is back in
+  place.
+- **Not exercised:** the panel drag and the B4 panel/service race. Both need
+  the panel open and driven interactively. Recommended check after the HM
+  switch.
+
+## Addendum: keybindings (spec §5–6), steps 12–14
+
+12. **HM keybindings** in `flake.nix`: add the options `keybindings.open`
+    (default `"SUPER + ALT + H"`) and `keybindings.cycleProfile` (default
+    `"SUPER + ALT + SHIFT + P"`), both `nullOr str`. Write
+    `xdg.configFile."hypr/hyprforge-binds.lua".text` with the non-null
+    `o.bind` lines. Update the README:
+    - the Install section gets the options and the one-time
+      `pcall(require, "hypr.hyprforge-binds")` line;
+    - the Scripting and keybindings examples use SUPER+ALT+SHIFT+P and note
+      that upstream's SUPER+ALT+P often clashes.
+    → verify: `nix flake check`. Evaluate the module with a minimal
+    home-manager config (`nix eval`) and check that the generated file text
+    contains both binds, and one bind when one option is null.
+
+13. **Host clashes** (outside this repo):
+    - `~/.config/hypr/omgato-bindings.lua`: P→`SUPER + ALT + SHIFT + O`,
+      C→`SUPER + ALT + SHIFT + C`, with a `.bak` first.
+    - `~/.config/nixos/hosts/common/nixos/omarchy-meet-binds.nix`: M→
+      `SUPER + CTRL + SHIFT + M`. Commit it in that repo, following its
+      rules. The change takes effect after the user's next rebuild; I don't
+      run the rebuild.
+    → verify: after `hyprctl reload`, the duplicate scan shows only the meet
+    clash until the rebuild.
+
+14. **Hook it up on this host**: add
+    `pcall(require, "hypr.hyprforge-binds")` to `~/.config/hypr/bindings.lua`
+    after a `.bak`. Until the user wires the HM module into their config,
+    `hyprforge-binds.lua` doesn't exist and the `pcall` skips it. That's
+    harmless.
+    → verify: `hyprctl reload` gives no config errors.
+
+Rollback: remove the `pcall` line, restore the `.bak` files, and
+`git revert` in both repos.
+
+### Steps 12–14 results (2026-09-29)
+
+- 12: `nix flake check` is green. Evaluating the module gives both `o.bind`
+  lines by default, and one when `keybindings.open = null`.
+- 13, **deviation (implemented):** `omgato-bindings.lua` turned out to be
+  generated by the Omgato plugin and rewritten whenever its shortcuts change,
+  so a hand edit would be lost. The keys were changed with Omgato's own CLI
+  instead (`omgato-panel set-shortcut --id camera.pick|camera.full`), which
+  persists them in its `shortcuts.json`. A backup of the old file is at
+  `omgato-bindings.lua.bak.hyprsetting`.
+- 13, **held back:** the meet key. `omarchy-meet-binds.nix` binds
+  SUPER+SHIFT+M on purpose, to match the GNOME binding in
+  `home/desktop/gnome/keybindings.nix`. Moving only the Omarchy side breaks
+  that match, and moving both is a multi-file change in the NixOS config repo
+  that needs that repo's own intent. Waiting on the user.
+- 14: the `pcall` line was appended to `bindings.lua`, with a backup at
+  `bindings.lua.bak.hyprsetting`. Reload is clean. With the module's output
+  put in place temporarily, `hyprctl binds` listed "Hyprforge" (SUPER+ALT+H)
+  and "Next Hyprforge profile" (SUPER+ALT+SHIFT+P). The temporary file was
+  then removed so it can't block Home Manager.
+- 13, meet clash resolved (user chose the suggested option): the meeting
+  key stays SUPER+SHIFT+M, matching GNOME. Omarchy's default Music is
+  unbound and rebound to SUPER+CTRL+SHIFT+M in `bindings.lua`, above the
+  `meet-binds` pcall so the unbind can't remove the meeting key.
+  `omarchy-meet-binds.nix` is unchanged.
+- Duplicate-key scan now: **none**. `configerrors` is empty.
+
+### Step 11 correction (2026-09-29, found during PR #4's live check)
+
+- **The step 11 run above tested the original copy, not this build.** The
+  original was moved to `aziz.hyprforge.bak` *inside*
+  `~/.config/omarchy/plugins/`. Omarchy discovers plugins by their
+  `manifest.json` under that dir, so the `.bak` copy (same id) was loaded
+  and the store symlink was not. The proof is that the launcher's `Icon=`
+  pointed into `.bak`.
+- With the old copy moved **out of** the plugins dir, the store symlink is
+  discovered, so the HM module's single directory symlink works.
+- **Re-run on the real build (PR #4 branch, same fix code):**
+  - two rapid `set` calls both land in `state.json` and `hyprforge.lua`;
+  - `unset` clears them;
+  - `configerrors` is empty.
+
+  The step 11 conclusions hold.
+- **Deviation (implemented):** the README migration step and this plan's
+  Tests/Rollback now move the old copy to `~/aziz.hyprforge.old`, outside
+  the plugins dir. The spec's Risks line ("`mv … aziz.hyprforge.bak`") is
+  superseded by this.

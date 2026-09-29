@@ -63,8 +63,12 @@ for (const d of desc) { const it = Engine.itemFromDescription(d, undefined); if 
 check(generated === desc.length, "itemFromDescription failed for some")
 
 // 3. render: presets + motions + rules + synthetics
-const baseline = JSON.parse(execFileSync("lua", [path.join(root, "baseline.lua"), "/usr/share/omarchy/default/hypr/looknfeel.lua"]).toString())
-check(baseline.animations.length > 10, "baseline animations parsed")
+const looknfeel = path.join(process.env.OMARCHY_PATH || "/usr/share/omarchy", "default/hypr/looknfeel.lua")
+let baseline = { curves: [], animations: [] }
+if (fs.existsSync(looknfeel)) {
+  baseline = JSON.parse(execFileSync("lua", [path.join(root, "baseline.lua"), looknfeel]).toString())
+  check(baseline.animations.length > 10, "baseline animations parsed")
+} else console.log("skip: baseline (no Omarchy at " + looknfeel + ")")
 
 function renderAll(cfg, label) {
   const text = Engine.renderFile(cfg, { baseline })
@@ -135,7 +139,7 @@ for (const m of Engine.MOTIONS) {
 
 // 4. hook insertion
 {
-  const src = fs.readFileSync(path.join(os.homedir(), ".config/hypr/hyprland.lua"), "utf8")
+  const src = fs.readFileSync(path.join(__dirname, "hyprland.fixture.lua"), "utf8")
   const hooked = Engine.addHook(Engine.removeHook(src))
   const lines = hooked.split("\n")
   const hook = lines.findIndex(l => l.includes('"hypr.hyprforge"'))
@@ -169,6 +173,31 @@ check(Engine.parsePalette('accent = "#a88bff"\nred = "#ff6f91"').length === 2, "
     const probs = Engine.validate(cfg, typeOf)
     check(probs.length === 0, `look ${look.id} validates: ${JSON.stringify(probs)}`)
   }
+}
+
+// 7. render never mutates its input, and wrapFile(render) === renderFile
+{
+  const cases = Engine.LOOKS.map(l => ({ options: Object.assign({}, l.options, l.extra || {}) }))
+    .concat(Engine.MOTIONS.map(m => ({ anims: m.anims })))
+  for (const cfg of cases) {
+    const before = JSON.stringify(cfg)
+    const body = Engine.render(cfg, { baseline })
+    check(JSON.stringify(cfg) === before, "render left its input unchanged")
+    check(Engine.wrapFile(body) === Engine.renderFile(cfg, { baseline }), "wrapFile(render) matches renderFile")
+  }
+  check(JSON.stringify(Engine.shape({ options: 1 })) === JSON.stringify(Engine.defaultConfig()), "shape fills malformed fields")
+}
+
+// 8. baseline.lua skips malformed curves and never prints bare inf
+{
+  const f = path.join(os.tmpdir(), "hyprforge-bad-" + process.pid + ".lua")
+  fs.writeFileSync(f, 'hl.curve("bad", { points = 5 })\nhl.curve("good", { points = { {0.1, 0.2}, {0.3, 1} } })\nhl.animation({ leaf = "windows", speed = math.huge, bezier = "good" })\n')
+  let out = null
+  try { out = JSON.parse(execFileSync("lua", [path.join(root, "baseline.lua"), f]).toString()) } catch (e) {}
+  fs.unlinkSync(f)
+  check(out !== null, "baseline output is valid JSON with bad input")
+  check(out && out.curves.length === 1 && out.curves[0].name === "good", "bad curve skipped, good kept")
+  check(out && out.animations.length === 1 && out.animations[0].speed === null, "inf speed becomes null")
 }
 
 if (failures) { console.log(`\n${failures} failure(s)`); process.exit(1) }

@@ -5,7 +5,9 @@ const { execFileSync } = require("child_process")
 const root = path.join(__dirname, "..")
 function load(f) { const c = {}; vm.createContext(c); vm.runInContext(fs.readFileSync(path.join(root, f), "utf8").replace(/^\.pragma library\s*/, ""), c); return c }
 const Engine = load("Engine.js")
-const baseline = JSON.parse(execFileSync("lua", [path.join(root, "baseline.lua"), "/usr/share/omarchy/default/hypr/looknfeel.lua"]).toString())
+const looknfeel = path.join(process.env.OMARCHY_PATH || "/usr/share/omarchy", "default/hypr/looknfeel.lua")
+if (!fs.existsSync(looknfeel)) { console.error("live.js needs a running Omarchy: " + looknfeel + " not found (set OMARCHY_PATH)"); process.exit(1) }
+const baseline = JSON.parse(execFileSync("lua", [path.join(root, "baseline.lua"), looknfeel]).toString())
 const cases = []
 for (const l of Engine.LOOKS) { const c = Engine.defaultConfig(); Object.assign(c.options, l.options, l.extra || {}); cases.push(["look " + l.id, c]) }
 for (const m of Engine.MOTIONS) { const c = Engine.defaultConfig(); c.curves = m.curves; c.anims = m.anims; c.options["hf:anim_speed"] = 1.3; cases.push(["motion " + m.id, c]) }

@@ -64,6 +64,8 @@ Item {
   property var animBaseline: ({ curves: [], animations: [] })
   property var descriptions: []
   property var allItemsCache: []
+  property var typeByKey: ({})   // key -> type for allItemsCache, for typeOf()
+  property var allHay: []        // lowercase "key label desc", same index as allItemsCache
   property var clients: []
   property string monitorName: ""
   property real monitorWidth: 1920
@@ -298,19 +300,21 @@ Item {
 
   function lookKeys() { return Schema.keysInSections(Engine.LOOK_SECTIONS) }
 
+  // Presets never change: canonicalize them once, not on every cfg change.
+  readonly property var lookCanon: Engine.LOOKS.map(function(l) { return canonical(l.options) })
+  readonly property var motionCanon: Engine.MOTIONS.map(function(m) { return canonical(m.anims) })
+
   readonly property string activeLook: {
     var keys = lookKeys()
     var mine = {}
     for (var k in root.cfg.options) if (keys[k]) mine[k] = root.cfg.options[k]
-    var c = canonical(mine)
-    for (var i = 0; i < Engine.LOOKS.length; i++) if (canonical(Engine.LOOKS[i].options) === c) return Engine.LOOKS[i].id
-    return ""
+    var i = root.lookCanon.indexOf(canonical(mine))
+    return i === -1 ? "" : Engine.LOOKS[i].id
   }
 
   readonly property string activeMotion: {
-    var c = canonical(root.cfg.anims)
-    for (var i = 0; i < Engine.MOTIONS.length; i++) if (canonical(Engine.MOTIONS[i].anims) === c) return Engine.MOTIONS[i].id
-    return ""
+    var i = root.motionCanon.indexOf(canonical(root.cfg.anims))
+    return i === -1 ? "" : Engine.MOTIONS[i].id
   }
 
   function applyLook(id) {
@@ -572,9 +576,11 @@ Item {
     'cat -- "$real" > "$bak"',
     'cmp -s -- "$real" "$bak" || { echo "backup failed" >&2; exit 5; }',
     'new=$(mktemp -- "$dir/.hyprland.lua.hyprforge-XXXXXX")',
+    'trap \'rm -f -- "$new"\' EXIT',
     'printf "%s" "$3" > "$new"',
     'chmod --reference="$real" -- "$new" 2>/dev/null || true',
     'mv -fT -- "$new" "$real"',
+    'trap - EXIT',
     'printf "%s\\n" "$bak"'
   ].join("\n")
 
@@ -623,7 +629,7 @@ Item {
     if (!body) return
     root.previewDirty = true
     if (evalProc.running) { root.previewPending = true; return }
-    evalProc.command = capped(["timeout", "3", "hyprctl", "eval", "local _hyprforge = true\n" + body], 64 * 1024)
+    evalProc.command = Engine.capped(["timeout", "3", "hyprctl", "eval", "local _hyprforge = true\n" + body], 64 * 1024)
     evalProc.running = true
   }
 
@@ -651,7 +657,7 @@ Item {
   function typeOf(key) {
     var it = Schema.itemFor(key)
     if (it) return it.type
-    for (var i = 0; i < root.allItemsCache.length; i++) if (root.allItemsCache[i].key === key) return root.allItemsCache[i].type
+    if (root.typeByKey[key] !== undefined) return root.typeByKey[key]
     return root.liveTypes[key] || ""
   }
 
@@ -675,12 +681,16 @@ Item {
   property bool rejected: false
   property bool luaWriting: false
   property bool stateStale: false
+  property string commitLuaText: ""   // rendered once per commit in persistNow
 
   function persistNow() {
     persistTimer.stop()
     root.editing = false
     if (!root.stateLoaded) return
     if (root.committing) { root.again = true; return }
+    // A script change is mid-flight: wait for it, then re-read. If it changed
+    // state.json its result wins; otherwise this edit is committed then.
+    if (root.service && root.service.opBusy) { root.waitService = true; return }
     dropRedundant()
     var problems = Engine.validate(root.cfg, typeOf)
     if (problems.length) {
@@ -691,8 +701,9 @@ Item {
     root.commitCfg = Engine.normalize(root.cfg)
     root.commitLabel = root.pendingLabel
     root.pendingLabel = ""
-    var next = Engine.renderFile(root.commitCfg, { baseline: root.animBaseline })
-    if (next === root.luaText) {
+    var body = Engine.render(root.commitCfg, { baseline: root.animBaseline })
+    root.commitLuaText = Engine.wrapFile(body)
+    if (root.commitLuaText === root.luaText) {
       saveState(root.commitCfg)
       recordHistory(root.commitCfg, root.commitLabel)
       if (root.previewDirty) reloadProc.running = true
@@ -700,9 +711,8 @@ Item {
       return
     }
     root.statusText = "Checking with Hyprland…"
-    var body = Engine.render(root.commitCfg, { baseline: root.animBaseline })
     if (!body) { commitChecked(); return }
-    checkProc.command = capped(["timeout", "5", "hyprctl", "eval", "local _hyprforge_check = true\n" + body], 64 * 1024)
+    checkProc.command = Engine.capped(["timeout", "5", "hyprctl", "eval", "local _hyprforge_check = true\n" + body], 64 * 1024)
     checkProc.running = true
   }
 
@@ -711,7 +721,7 @@ Item {
     recordHistory(root.commitCfg, root.commitLabel)
     root.statusText = "Applying…"
     root.luaWriting = true
-    root.pendingLuaText = Engine.renderFile(root.commitCfg, { baseline: root.animBaseline })
+    root.pendingLuaText = root.commitLuaText
     writer.write(root.luaPath, root.pendingLuaText)
   }
 
@@ -793,16 +803,11 @@ Item {
     var keys = root.descriptions.length ? root.descriptions.map(function(d) { return d.name }) : Schema.liveKeys()
     var batch = []
     for (var i = 0; i < keys.length; i++) batch.push("getoption " + keys[i])
-    liveProc.command = capped(["timeout", "5", "hyprctl", "-j", "--batch", batch.join(" ; ")], 4 * 1024 * 1024)
+    liveProc.command = Engine.capped(["timeout", "5", "hyprctl", "-j", "--batch", batch.join(" ; ")], 4 * 1024 * 1024)
     liveProc.running = true
   }
 
   function refreshClients() { clientsProc.running = true }
-
-  // Cap a command's stdout before it reaches QML (StdioCollector keeps all of it).
-  function capped(cmd, bytes) {
-    return ["sh", "-c", '"$@" | head -c ' + Math.floor(bytes), "sh"].concat(cmd)
-  }
 
   // ============================================================= catalogue
 
@@ -815,6 +820,13 @@ Item {
       var it = Engine.itemFromDescription(d, root.liveTypes[d.name])
       out.push(it)
     }
+    var types = {}, hay = []
+    for (var j = 0; j < out.length; j++) {
+      types[out[j].key] = out[j].type
+      hay.push((out[j].key + " " + out[j].label + " " + (out[j].desc || "")).toLowerCase())
+    }
+    root.typeByKey = types
+    root.allHay = hay
     root.allItemsCache = out
   }
 
@@ -868,10 +880,10 @@ Item {
     if (!sec) return []
     if (sec.view === "all") {
       var f = root.allFilter.toLowerCase().trim()
-      return root.allItemsCache.filter(function(it) {
+      return root.allItemsCache.filter(function(it, i) {
         if (root.allGroup && it.key.split(":")[0] !== root.allGroup) return false
         if (!f) return true
-        return (it.key + " " + it.label + " " + (it.desc || "")).toLowerCase().indexOf(f) !== -1
+        return root.allHay[i].indexOf(f) !== -1
       })
     }
     if (sec.view) return []
@@ -1046,13 +1058,13 @@ Item {
 
   Process {
     id: errorsProc
-    command: root.capped(["timeout", "5", "hyprctl", "configerrors"], 64 * 1024)
+    command: Engine.capped(["timeout", "5", "hyprctl", "configerrors"], 64 * 1024)
     stdout: StdioCollector { waitForEnd: true; onStreamFinished: root.afterReload(text) }
   }
 
   Process {
     id: initialErrorsProc
-    command: root.capped(["timeout", "5", "hyprctl", "configerrors"], 64 * 1024)
+    command: Engine.capped(["timeout", "5", "hyprctl", "configerrors"], 64 * 1024)
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
@@ -1076,7 +1088,7 @@ Item {
 
   Process {
     id: descProc
-    command: root.capped(["timeout", "5", "hyprctl", "descriptions", "-j"], 4 * 1024 * 1024)
+    command: Engine.capped(["timeout", "5", "hyprctl", "descriptions", "-j"], 4 * 1024 * 1024)
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
@@ -1088,7 +1100,7 @@ Item {
 
   Process {
     id: baselineProc
-    command: root.capped(["lua", root.pluginDir + "/baseline.lua", root.omarchyPath + "/default/hypr/looknfeel.lua", root.home + "/.config/hypr/looknfeel.lua"], 1024 * 1024)
+    command: Engine.capped(["lua", root.pluginDir + "/baseline.lua", root.omarchyPath + "/default/hypr/looknfeel.lua", root.home + "/.config/hypr/looknfeel.lua"], 1024 * 1024)
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
@@ -1099,7 +1111,7 @@ Item {
 
   Process {
     id: monitorsProc
-    command: root.capped(["timeout", "5", "hyprctl", "monitors", "-j"], 256 * 1024)
+    command: Engine.capped(["timeout", "5", "hyprctl", "monitors", "-j"], 256 * 1024)
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
@@ -1121,7 +1133,7 @@ Item {
 
   Process {
     id: clientsProc
-    command: root.capped(["timeout", "5", "hyprctl", "clients", "-j"], 2 * 1024 * 1024)
+    command: Engine.capped(["timeout", "5", "hyprctl", "clients", "-j"], 2 * 1024 * 1024)
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
@@ -1144,7 +1156,7 @@ Item {
   Process {
     id: pasteProc
     // One byte past the limit, so an oversized clipboard is detected, not truncated.
-    command: root.capped(["timeout", "5", "wl-paste", "--no-newline"], root.importLimit + 1)
+    command: Engine.capped(["timeout", "5", "wl-paste", "--no-newline"], root.importLimit + 1)
     stdout: StdioCollector { waitForEnd: true; onStreamFinished: root.importText(text) }
   }
 
@@ -1170,6 +1182,18 @@ Item {
   // The service applies profiles/looks from keybindings; it tells us so we can
   // re-read instead of watching files.
   property var service: null
+  Binding {
+    target: root.service
+    property: "panelBusy"
+    value: root.committing
+    when: root.service !== null
+  }
+  property bool waitService: false
+  Connections {
+    target: root.service
+    ignoreUnknownSignals: true
+    function onOpBusyChanged() { if (root.waitService && !root.service.opBusy) stateReader.read() }
+  }
   Connections {
     target: root.service
     ignoreUnknownSignals: true
@@ -1208,6 +1232,11 @@ Item {
         root.stateLoaded = false
         root.readFailed("~/.config/hypr/hyprforge/state.json", status)
         return
+      }
+      if (root.waitService) {
+        root.waitService = false
+        if (raw === root.lastStateText) { root.stateLoaded = true; persistNow(); return }
+        root.pendingLabel = ""   // the script's change replaces the unsaved edit
       }
       if (raw === root.lastStateText) { root.stateLoaded = true; return }
       if (root.stateLoaded && (root.committing || root.editing || persistTimer.running)) { root.stateStale = true; return }
