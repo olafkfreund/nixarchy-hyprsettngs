@@ -65,8 +65,8 @@
             xdg.configFile."hypr/hyprforge-binds.lua".text =
               let kb = cfg.keybindings; in
               lib.concatStringsSep "\n" ([ "-- Hyprforge keybindings, managed by Home Manager (programs.nixarchy-hyprsetting)." ]
-                ++ lib.optional (kb.open != null) ''o.bind(${builtins.toJSON kb.open}, "Hyprforge", "omarchy-shell shell toggle aziz.hyprforge '{}'")''
-                ++ lib.optional (kb.cycleProfile != null) ''o.bind(${builtins.toJSON kb.cycleProfile}, "Next Hyprforge profile", "omarchy-shell hyprforge cycleProfile")'')
+                ++ lib.optional (kb.open != null) ''o.bind(${builtins.toJSON kb.open}, "Nixarchy Hyprland Settings", "omarchy-shell shell toggle aziz.hyprforge '{}'")''
+                ++ lib.optional (kb.cycleProfile != null) ''o.bind(${builtins.toJSON kb.cycleProfile}, "Next Nixarchy Hyprland Settings profile", "omarchy-shell hyprforge cycleProfile")'')
               + "\n";
           };
         };

@@ -70,6 +70,15 @@ commit per step.
    link, and the "Hyprforge" mentions that describe the upstream project.
    → verify: a read-through; `git diff README.md` touches no credit lines.
 
+   **Step 5 audit result:** the only remaining non-comment "Hyprforge"
+   strings are the `HEADER` credit "(based on Hyprforge)", the manifest
+   description credit, and the `X-Hyprforge-Managed` marker (contract).
+
+   **Deviation (implemented, step 6):** the keybinding descriptions written
+   by the Home Manager module in `flake.nix` ("Hyprforge", "Next Hyprforge
+   profile") appear in Omarchy's keybinding list, so they're user-visible.
+   The spec's table missed them, and they are renamed too.
+
 7. **Live check** (this host; reversible; same procedure as before):
    - back up `~/.config/hypr/hyprforge/`, `hyprforge.lua` and
      `~/.local/share/applications/hyprforge.desktop`;
