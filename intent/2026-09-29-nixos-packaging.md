@@ -24,7 +24,10 @@ safety commits (SafeWriter, bounded input).
 ## Proposed outcome
 
 - README title and install text say **nixarchy-hyprsetting** and describe the
-  NixOS install; credit to the upstream Hyprforge author stays.
+  NixOS install.
+- README keeps a visible link to the original repo,
+  https://github.com/AbdulazizAlwabel/omarchy-hyprforge, and credits its
+  creator, Aziz (AbdulazizAlwabel), as the original author of Hyprforge.
 - `flake.nix` exposes the plugin as a package and a way to install it
   declaratively on a Nixarchy machine, so a rebuild puts it in place.
 - `devenv` shell: `cd` into the repo gives `node` and `lua`, and the offline
@@ -44,7 +47,8 @@ safety commits (SafeWriter, bounded input).
 - Must not change the plugin id `aziz.hyprforge`, its IPC name
   (`omarchy-shell hyprforge`) or its state paths (`~/.config/hypr/hyprforge*`),
   or existing users lose their profiles and the Connect line breaks.
-- Must keep the MIT license and upstream attribution.
+- Must keep the MIT license (including the original copyright line), the link
+  to the original repo, and credit to the original creator.
 - The plugin must still work when installed from the Nix store (read-only):
   anything it writes must go under `~/.config`/`~/.cache`, not its own dir.
 - Review fixes must not weaken the existing file-safety or input-bounding code.
