@@ -1,5 +1,5 @@
 ---
-status: draft
+status: approved
 issue: none (issues are disabled on this repo)
 intent: intent/2026-09-29-rename-display-name.md
 ---
