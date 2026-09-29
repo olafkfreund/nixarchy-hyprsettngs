@@ -56,11 +56,14 @@ omarchy restart shell
 ```
 
 If the plugin was installed before with `omarchy plugin add`, move that copy
-aside before the first switch, because Home Manager won't replace a real
-directory. Your settings live in `~/.config/hypr/hyprforge/` and are kept:
+**out of the plugins directory** before the first switch. Home Manager won't
+replace a real directory, and a copy left anywhere under
+`~/.config/omarchy/plugins/` (even renamed) is still found by its manifest,
+so Omarchy would keep loading the old copy. Your settings live in
+`~/.config/hypr/hyprforge/` and are kept:
 
 ```bash
-mv ~/.config/omarchy/plugins/aziz.hyprforge ~/.config/omarchy/plugins/aziz.hyprforge.bak
+mv ~/.config/omarchy/plugins/aziz.hyprforge ~/aziz.hyprforge.old
 ```
 
 ### Other systems (upstream)

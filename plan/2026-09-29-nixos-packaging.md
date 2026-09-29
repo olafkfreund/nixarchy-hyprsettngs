@@ -202,7 +202,8 @@ blast radius is smaller.
 - `devenv shell -- node test/run.js`: 0 failures.
 - `devenv shell -- node test/live.js`: every preset dry-runs clean.
 - `nix flake check`: passes.
-- Runtime, after `mv ~/.config/omarchy/plugins/aziz.hyprforge{,.bak}` and
+- Runtime, after `mv ~/.config/omarchy/plugins/aziz.hyprforge ~/aziz.hyprforge.old`
+  (out of the plugins dir; see the step 11 correction) and
   wiring the HM module into the user's config (or, before that, a manual
   `ln -s $(nix build --print-out-paths) …` for a dry test), then
   `omarchy restart shell`:
@@ -219,8 +220,8 @@ blast radius is smaller.
 - Code: `git revert` the step commits, or drop the branch. `main` is
   untouched until merge.
 - Host: remove the HM module line and switch, then
-  `mv ~/.config/omarchy/plugins/aziz.hyprforge.bak
-  ~/.config/omarchy/plugins/aziz.hyprforge` and `omarchy restart shell`.
+  `mv ~/aziz.hyprforge.old ~/.config/omarchy/plugins/aziz.hyprforge` and
+  `omarchy restart shell`.
   User state in `~/.config/hypr/hyprforge/` is never touched by this change.
 
 ## Step 11 results (2026-09-29)
@@ -302,3 +303,24 @@ Rollback: remove the `pcall` line, restore the `.bak` files, and
   `meet-binds` pcall so the unbind can't remove the meeting key.
   `omarchy-meet-binds.nix` is unchanged.
 - Duplicate-key scan now: **none**. `configerrors` is empty.
+
+### Step 11 correction (2026-09-29, found during PR #4's live check)
+
+- **The step 11 run above tested the original copy, not this build.** The
+  original was moved to `aziz.hyprforge.bak` *inside*
+  `~/.config/omarchy/plugins/`. Omarchy discovers plugins by their
+  `manifest.json` under that dir, so the `.bak` copy (same id) was loaded
+  and the store symlink was not. The proof is that the launcher's `Icon=`
+  pointed into `.bak`.
+- With the old copy moved **out of** the plugins dir, the store symlink is
+  discovered, so the HM module's single directory symlink works.
+- **Re-run on the real build (PR #4 branch, same fix code):**
+  - two rapid `set` calls both land in `state.json` and `hyprforge.lua`;
+  - `unset` clears them;
+  - `configerrors` is empty.
+
+  The step 11 conclusions hold.
+- **Deviation (implemented):** the README migration step and this plan's
+  Tests/Rollback now move the old copy to `~/aziz.hyprforge.old`, outside
+  the plugins dir. The spec's Risks line ("`mv … aziz.hyprforge.bak`") is
+  superseded by this.
