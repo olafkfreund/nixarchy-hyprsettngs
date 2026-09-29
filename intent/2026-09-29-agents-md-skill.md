@@ -1,5 +1,5 @@
 ---
-status: draft
+status: approved
 issue: none (issues are disabled on this repo)
 author: olafkfreund
 ---
@@ -63,11 +63,8 @@ Two kinds of agent meet this repo, and neither has anything written for it:
 
 ## Open questions
 
-1. Skill location: only in this repo (`skills/hyprforge/SKILL.md`), or also
-   installed by the HM module into `~/.claude/skills/hyprforge`, behind an
-   option such as `programs.nixarchy-hyprsetting.skill.enable`?
-2. `CLAUDE.md`: a symlink to `AGENTS.md`, a one-line `@AGENTS.md` import, or
-   skip it?
-3. Ordering with the pending CI intent: two follow-up branches now build on PR #1
-   (`ci/checks-lint-test`, this one). Should I keep them as separate PRs, or
-   combine them into one follow-up PR?
+Resolved at approval (2026-09-29): the user approved "use your suggestions":
+
+1. Both: the skill lives in the repo at `skills/hyprforge/SKILL.md`, and the HM module can install it to `~/.claude/skills/hyprforge` behind `programs.nixarchy-hyprsetting.skill.enable` (default `false`, so other users of the module get nothing in `~/.claude` unless they ask).
+2. `CLAUDE.md` is a one-line `@AGENTS.md` import (no symlink).
+3. Separate PR, based on `feat/nixos-packaging` (PR #1), retargeted to `main` once #1 merges.
