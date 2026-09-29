@@ -63,8 +63,12 @@ for (const d of desc) { const it = Engine.itemFromDescription(d, undefined); if 
 check(generated === desc.length, "itemFromDescription failed for some")
 
 // 3. render: presets + motions + rules + synthetics
-const baseline = JSON.parse(execFileSync("lua", [path.join(root, "baseline.lua"), "/usr/share/omarchy/default/hypr/looknfeel.lua"]).toString())
-check(baseline.animations.length > 10, "baseline animations parsed")
+const looknfeel = path.join(process.env.OMARCHY_PATH || "/usr/share/omarchy", "default/hypr/looknfeel.lua")
+let baseline = { curves: [], animations: [] }
+if (fs.existsSync(looknfeel)) {
+  baseline = JSON.parse(execFileSync("lua", [path.join(root, "baseline.lua"), looknfeel]).toString())
+  check(baseline.animations.length > 10, "baseline animations parsed")
+} else console.log("skip: baseline (no Omarchy at " + looknfeel + ")")
 
 function renderAll(cfg, label) {
   const text = Engine.renderFile(cfg, { baseline })
