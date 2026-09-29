@@ -71,12 +71,40 @@
           };
         };
 
+      formatter = forAll (pkgs: pkgs.nixfmt);
+
       checks = forAll (pkgs: {
-        default = pkgs.runCommand "nixarchy-hyprsetting-tests" {
+        package = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
+
+        tests = pkgs.runCommand "nixarchy-hyprsetting-tests" {
           nativeBuildInputs = [ pkgs.nodejs pkgs.lua ];
         } ''
           cp -r ${./.} src && chmod -R u+w src && cd src
           node test/run.js
+          touch $out
+        '';
+
+        # Everything that can be checked without a running Hyprland.
+        lint = pkgs.runCommand "nixarchy-hyprsetting-lint" {
+          nativeBuildInputs = [ pkgs.nixfmt pkgs.statix pkgs.deadnix pkgs.qt6.qtdeclarative pkgs.nodejs pkgs.shellcheck pkgs.lua ];
+        } ''
+          cp -r ${./.} src && chmod -R u+w src && cd src
+          echo "== nix"
+          nixfmt --check $(find . -name '*.nix')
+          statix check .
+          deadnix --fail .
+          echo "== qml (syntax only: qmllint exits 0 on syntax errors, and warns about every unresolved Quickshell import)"
+          bad=0
+          for f in $(find . -name '*.qml'); do
+            if qmllint "$f" 2>&1 | grep -F '[syntax]'; then bad=1; fi
+          done
+          [ "$bad" = 0 ]
+          echo "== embedded shell scripts"
+          node test/embedded-sh.js "$TMPDIR/sh"
+          for f in "$TMPDIR"/sh/*.sh; do sh -n "$f"; done
+          shellcheck -s sh "$TMPDIR"/sh/*.sh
+          echo "== lua"
+          luac -p baseline.lua
           touch $out
         '';
       });
