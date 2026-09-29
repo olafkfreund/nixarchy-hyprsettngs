@@ -76,3 +76,15 @@ Resolved at approval (2026-09-29): the user approved with the suggested answers:
 1. Stacked on PR #4 as its own PR.
 2. Documented migration: `omarchy plugin disable aziz.hyprforge`, then `omarchy plugin enable nixarchy.hyprlandsettings`. No automatic detection.
 3. The IPC target stays `hyprforge` only. No alias.
+
+## Addendum (2026-09-29, the user's instruction in chat: "yes do that and rewrite this to be nixos focused")
+
+- The README is **rewritten as a whole, NixOS-first**, in this PR, and it
+  gains a "What this fork adds" section. This PR is the last one to touch
+  the README, so doing the rewrite here avoids conflicts with #1–#4.
+- The README text from the sibling PRs (#2: `nix flake check`/`nix fmt`;
+  #3: "For AI agents", `skill.enable`, `open`/`close`/`listProfiles`) is
+  carried into the rewrite.
+- The approved restart-safety outcome for the README (don't tell users to
+  restart the shell after a switch; wait for it to answer instead) is
+  written into this rewrite rather than as a separate README edit.
