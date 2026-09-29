@@ -46,8 +46,13 @@ Home Manager only manages its own files. It never edits `shell.json`,
 
    ```bash
    omarchy-shell shell rescanPlugins
-   until omarchy-shell shell ping >/dev/null 2>&1; do sleep 1; done
+   # wait until the shell lists the plugin (it hot-reloads; ~10-30 s):
+   sleep 5; until omarchy-shell shell listPlugins 2>/dev/null | grep -q '"nixarchy.hyprlandsettings"'; do sleep 2; done
    ```
+
+   Wait for the plugin to be *listed*, not just for the shell to answer.
+   `omarchy-shell shell ping` can answer before the reload has even
+   started.
 
 2. **Enable it.** This is recorded in `~/.config/omarchy/shell.json`:
 
@@ -80,7 +85,7 @@ Home Manager only manages its own files. It never edits `shell.json`,
 nix flake update nixarchy-hyprsetting
 # switch your Home Manager / NixOS configuration as usual, then:
 omarchy-shell shell rescanPlugins
-until omarchy-shell shell ping >/dev/null 2>&1; do sleep 1; done
+sleep 5; until omarchy-shell shell listPlugins 2>/dev/null | grep -q '"nixarchy.hyprlandsettings"'; do sleep 2; done
 ```
 
 Your settings, profiles and history live in `~/.config/hypr/hyprforge/`.
@@ -94,8 +99,9 @@ the bar stays up. If `omarchy restart shell` runs in that window, the old
 shell can outlive upstream's 5-second wait, and the new one exits with
 "already running". You're then left with **no shell or bar at all**
 ([nixarchy #953](https://github.com/olafkfreund/nixarchy/issues/953)). So
-rescan and wait instead. If you ever do need a restart, wait until the shell
-answers `ping` first, and check it came back afterwards.
+rescan and wait instead. If you ever do need a restart, first wait until the
+shell is idle and answers `omarchy-shell shell ping`, then check that it came
+back afterwards.
 
 ## Migrating
 
@@ -108,8 +114,8 @@ because Omarchy can only disable an id it can still see:
 omarchy plugin disable aziz.hyprforge                              # 1. while the old copy is still installed
 mv ~/.config/omarchy/plugins/aziz.hyprforge ~/aziz.hyprforge.old   # 2. OUT of the plugins directory
 # 3. enable the Home Manager module (above) and switch
-omarchy-shell shell rescanPlugins                                  # 4. then wait:
-until omarchy-shell shell ping >/dev/null 2>&1; do sleep 1; done
+omarchy-shell shell rescanPlugins                                  # 4. then wait until it is listed:
+sleep 5; until omarchy-shell shell listPlugins 2>/dev/null | grep -q '"nixarchy.hyprlandsettings"'; do sleep 2; done
 omarchy plugin enable nixarchy.hyprlandsettings                    # 5.
 ```
 
@@ -271,7 +277,8 @@ On top of upstream Hyprforge:
 3. `omarchy plugin disable nixarchy.hyprlandsettings`. Do this while it's
    still installed. It also removes the launcher entry.
 4. Set `programs.nixarchy-hyprsetting.enable = false`, switch, then run
-   `omarchy-shell shell rescanPlugins` and wait for `ping` (as above).
+   `omarchy-shell shell rescanPlugins`, then wait until
+   `omarchy-shell shell ping` answers.
 5. Remove the `pcall(require, "hypr.hyprforge-binds")` line from
    `bindings.lua` if you like. It's harmless if left in.
 6. Optional: delete `~/.config/hypr/hyprforge.lua`,

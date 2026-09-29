@@ -84,8 +84,12 @@ Run `devenv allow` once in a fresh clone.
    leave **no shell at all**: upstream's `timeout 5` kill loop, nixarchy
    #953. This took p620's bar down for 17 minutes on 2026-09-29. After
    installing, updating or removing: run
-   `omarchy-shell shell rescanPlugins`, then
-   `until omarchy-shell shell ping >/dev/null 2>&1; do sleep 1; done`. If a
+   `omarchy-shell shell rescanPlugins`, then wait until `listPlugins`
+   shows the id. `ping` alone isn't enough: it can answer before the
+   reload starts, which was measured on p620, and the next IPC call then
+   fails with "not known". Wait with
+   `sleep 5; until omarchy-shell shell listPlugins 2>/dev/null | grep -q '"<id>"'; do sleep 2; done`.
+   If a
    restart is unavoidable, wait for idle, keep its output, and check `ping`
    afterwards. Move old plugin copies **out of**
    `~/.config/omarchy/plugins`: a renamed copy left inside is still

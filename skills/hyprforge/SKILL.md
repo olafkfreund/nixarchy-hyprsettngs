@@ -38,8 +38,8 @@ grep -q '"hypr.hyprforge"' ~/.config/hypr/hyprland.lua && echo connected
 - **Verify every change** (see below). `ok` doesn't mean it was applied.
 - **Busy right after an install or update?** If `omarchy-shell` stops
   answering just after the plugin was installed, updated or moved, the
-  shell is hot-reloading. Wait:
-  `until omarchy-shell shell ping >/dev/null 2>&1; do sleep 1; done`.
+  shell is hot-reloading. Wait until it lists the plugin again:
+  `sleep 5; until omarchy-shell shell listPlugins 2>/dev/null | grep -q '"nixarchy.hyprlandsettings"'; do sleep 2; done`.
   **Don't** run `omarchy restart shell` then; it can leave the desktop with
   no shell (nixarchy #953).
 

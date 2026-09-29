@@ -158,3 +158,40 @@ naming its step.
   answering for more than 60 s, stop, and restore `shell.json` and the
   original plugin dir first. Only then consider a restart, after waiting
   for idle, keeping its output, and checking `ping`.
+
+## Step 5 results (2026-09-29)
+
+- **Bus:** read (nothing claimed p620's shell) and announced beforehand;
+  "done" posted in the same thread afterwards.
+- **Migration, README steps 1–5, on p620 with no restart:**
+  - `disable aziz.hyprforge` worked, and removed its `shell.json` entry;
+  - moved the old copy out;
+  - linked the store build as `nixarchy.hyprlandsettings` (simulating HM);
+  - `rescanPlugins`;
+  - `enable nixarchy.hyprlandsettings`.
+- **End state:**
+  - `listPlugins` shows only `nixarchy.hyprlandsettings` (enabled), and
+    `shell.json` only the new id;
+  - the launcher has `Name=Nixarchy Hyprland Settings`,
+    `Exec=… toggle nixarchy.hyprlandsettings` and an `Icon=` in the new
+    dir;
+  - `set`/`unset` work, and the panel layer opens (910×1414);
+  - `state.json` cfg is unchanged, and `configerrors` is empty;
+  - the bar sampled at 3/3 throughout.
+- **Deviation (implemented):** the first run's step 5 failed with "plugin
+  'nixarchy.hyprlandsettings' is not known". `ping` answered at once,
+  before the hot-reload began, so the wait passed too early. The new id was
+  listed 12 s later, and the move back during restore took 31 s. The
+  README, `AGENTS.md` invariant 9 and the skill now wait for the id to
+  appear in `listPlugins`, not for `ping`. `ping` stays only for the
+  uninstall step, where nothing depends on the plugin being present.
+- **Stale entry:** not reproduced live. Following the order, step 1
+  removes the entry. From the code, `omarchy plugin disable` needs the
+  plugin to be known, so a stale entry left by skipping step 1 is removed
+  by hand from `shell.json` (or left; nothing loads it). The README's
+  order prevents it.
+- **Restored in reverse:** disabled the new id, swapped the folders back,
+  waited until listed (31 s), enabled `aziz.hyprforge`, and restored the
+  state/Lua/launcher. `shell.json`, the state dir, `hyprforge.lua` and
+  `hyprforge.desktop` are byte-identical to the backup. The shell is up
+  and `configerrors` is empty.
