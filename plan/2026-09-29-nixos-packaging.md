@@ -1,5 +1,5 @@
 ---
-status: approved
+status: draft
 issue: none (issues are disabled on this repo)
 spec: spec/2026-09-29-nixos-packaging.md
 ---
@@ -240,3 +240,38 @@ blast radius is smaller.
 - **Not exercised:** the panel drag and the B4 panel/service race. Both need
   the panel open and driven interactively. Recommended check after the HM
   switch.
+
+## Addendum: keybindings (spec §5–6), steps 12–14
+
+12. **HM keybindings** in `flake.nix`: add the options `keybindings.open`
+    (default `"SUPER + ALT + H"`) and `keybindings.cycleProfile` (default
+    `"SUPER + ALT + SHIFT + P"`), both `nullOr str`. Write
+    `xdg.configFile."hypr/hyprforge-binds.lua".text` with the non-null
+    `o.bind` lines. Update the README:
+    - the Install section gets the options and the one-time
+      `pcall(require, "hypr.hyprforge-binds")` line;
+    - the Scripting and keybindings examples use SUPER+ALT+SHIFT+P and note
+      that upstream's SUPER+ALT+P often clashes.
+    → verify: `nix flake check`. Evaluate the module with a minimal
+    home-manager config (`nix eval`) and check that the generated file text
+    contains both binds, and one bind when one option is null.
+
+13. **Host clashes** (outside this repo):
+    - `~/.config/hypr/omgato-bindings.lua`: P→`SUPER + ALT + SHIFT + O`,
+      C→`SUPER + ALT + SHIFT + C`, with a `.bak` first.
+    - `~/.config/nixos/hosts/common/nixos/omarchy-meet-binds.nix`: M→
+      `SUPER + CTRL + SHIFT + M`. Commit it in that repo, following its
+      rules. The change takes effect after the user's next rebuild; I don't
+      run the rebuild.
+    → verify: after `hyprctl reload`, the duplicate scan shows only the meet
+    clash until the rebuild.
+
+14. **Hook it up on this host**: add
+    `pcall(require, "hypr.hyprforge-binds")` to `~/.config/hypr/bindings.lua`
+    after a `.bak`. Until the user wires the HM module into their config,
+    `hyprforge-binds.lua` doesn't exist and the `pcall` skips it. That's
+    harmless.
+    → verify: `hyprctl reload` gives no config errors.
+
+Rollback: remove the `pcall` line, restore the `.bak` files, and
+`git revert` in both repos.

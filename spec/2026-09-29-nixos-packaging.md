@@ -1,5 +1,5 @@
 ---
-status: approved
+status: draft
 issue: none (issues are disabled on this repo)
 intent: intent/2026-09-29-nixos-packaging.md
 ---
@@ -86,6 +86,44 @@ Efficiency / quality:
 | E6 | `Panel.qml` `computeRows` ("all" view) | Cache a lowercase search string per item when `allItemsCache` is built. |
 | E7 | `capped()` | Move the duplicate in `Panel.qml` and `Service.qml` to a single `Engine.capped`. |
 
+### 5. Keybindings (addendum, 2026-09-29, requested during implementation)
+
+The module manages Hyprforge's own Hyprland config and nothing else. It uses
+the pattern this machine already uses for meet-binds and plugin-browser-binds:
+
+- New HM options:
+  - `programs.nixarchy-hyprsetting.keybindings.open`, default
+    `"SUPER + ALT + H"`;
+  - `programs.nixarchy-hyprsetting.keybindings.cycleProfile`, default
+    `"SUPER + ALT + SHIFT + P"`;
+  - either can be set to `null` to leave that key out.
+- When `enable` is set, HM writes `~/.config/hypr/hyprforge-binds.lua`, a
+  Nix-owned, read-only symlink containing the two `o.bind(...)` lines:
+  `omarchy-shell shell toggle aziz.hyprforge '{}'` and
+  `omarchy-shell hyprforge cycleProfile`.
+- `bindings.lua` gets one line, once:
+  `pcall(require, "hypr.hyprforge-binds")`. With `pcall`, a generation
+  without the file skips it and Hyprland doesn't break. HM does **not** edit
+  `bindings.lua`. The README documents the line, and on this host I add it
+  once, with a backup.
+- SUPER+ALT+P (upstream's suggestion) is not used, because it is already
+  taken. Both default keys are free in `hyprctl binds`.
+
+### 6. Existing keybinding clashes on this host (addendum)
+
+`hyprctl binds` shows three keys that each fire two actions. The add-on
+binding moves; the Omarchy default and your own GitLab binding stay:
+
+| Key | Keeps | Moves | New key (free) | File |
+|---|---|---|---|---|
+| SUPER+ALT+P | GitLab Pipelines | Omgato: place camera | SUPER+ALT+SHIFT+O | `~/.config/hypr/omgato-bindings.lua` |
+| SUPER+SHIFT+C | Calendar | Omgato: camera fullscreen | SUPER+ALT+SHIFT+C | `~/.config/hypr/omgato-bindings.lua` |
+| SUPER+SHIFT+M | Music | Meeting record/transcribe | SUPER+CTRL+SHIFT+M | `~/.config/nixos/hosts/common/nixos/omarchy-meet-binds.nix` (HM-managed; needs a rebuild) |
+
+These are host dotfile changes outside this repo. `omarchy-meet-binds.nix`
+lives in your NixOS config repo and is committed there, following that
+repo's own rules.
+
 ## Alternatives rejected
 
 - **Home Manager writes `shell.json` to enable the plugin.** Omarchy rewrites
@@ -105,6 +143,10 @@ Efficiency / quality:
   - `.bak.hyprforge-*` pruning on each Connect/Disconnect: kept on purpose.
     Those backups are the safety net for the user's `hyprland.lua`.
 
+- **HM appends the lines to `bindings.lua` from an activation script.** That
+  is an imperative edit of a file Omarchy also writes, and you asked for the
+  module to control only its own config.
+
 ## Risks
 
 - **Existing copied install**: `~/.config/omarchy/plugins/aziz.hyprforge` is a
@@ -118,6 +160,9 @@ Efficiency / quality:
   eval → write → reload → rollback order is not changed. Only the
   cloning/render counts and the op gating change.
 - **Scope**: only this Nixarchy host.
+
+- Keybindings: if the `pcall(require, ...)` line is missing, the keys do
+  nothing, silently. The README says to add it.
 
 ## Verification
 
