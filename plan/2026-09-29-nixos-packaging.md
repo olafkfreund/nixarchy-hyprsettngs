@@ -222,3 +222,21 @@ blast radius is smaller.
   `mv ~/.config/omarchy/plugins/aziz.hyprforge.bak
   ~/.config/omarchy/plugins/aziz.hyprforge` and `omarchy restart shell`.
   User state in `~/.config/hypr/hyprforge/` is never touched by this change.
+
+## Step 11 results (2026-09-29)
+
+- The plugin loaded from the store build (a symlink to the `nix build`
+  output), and the shell listed `aziz.hyprforge` as enabled.
+- Two back-to-back `set` calls both landed in `state.json` and
+  `hyprforge.lua` (B3). No stray temp files were left. `configerrors` was
+  empty.
+- The live values stayed at 6/5 because the user's Omarchy toggle
+  `opinionated-looks.lua` loads after Hyprforge and wins. This is by design
+  (README: toggles still work). A direct `hyprctl eval` of the same setting
+  applies 12.
+- Restored afterwards with `unset` ×2. `state.json` cfg and `hyprforge.lua`
+  are byte-identical to the backups, and the original plugin copy is back in
+  place.
+- **Not exercised:** the panel drag and the B4 panel/service race. Both need
+  the panel open and driven interactively. Recommended check after the HM
+  switch.
