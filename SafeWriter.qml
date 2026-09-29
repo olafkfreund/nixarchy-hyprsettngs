@@ -54,6 +54,9 @@ Item {
     if (!active) next()
   }
 
+  // Drop every queued job; one already running still finishes and reports.
+  function abort() { queue = [] }
+
   function next() {
     if (queue.length === 0) { active = false; return }
     active = true

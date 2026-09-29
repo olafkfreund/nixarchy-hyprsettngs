@@ -152,8 +152,15 @@ QtObject {
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
-        var baseline = { curves: [], animations: [] }
+        var baseline = null
         try { baseline = JSON.parse(text) } catch (e) {}
+        if (!baseline || !Array.isArray(baseline.animations)) {
+          // lua missing or crashed: rendering without the baseline would drop Omarchy's animations.
+          svc.notify("Could not read Omarchy's animations (is lua installed?); not applied", true)
+          svc.pending = null
+          svc.opDone()
+          return
+        }
         svc.finish(baseline)
       }
     }
@@ -164,6 +171,15 @@ QtObject {
   property SafeWriter writer: SafeWriter {
     onWritten: function(path, ok) {
       if (!ok) svc.notify("Could not write " + path, true)
+      if (!ok && path === svc.statePath) {
+        // Never let hyprforge.lua get ahead of state.json: drop the rest of the op.
+        svc.writer.abort()
+        svc.stateOnlyOp = false
+        svc.notify("Not applied", true)
+        svc.stateWritten()
+        svc.opDone()
+        return
+      }
       if (path === svc.luaPath) {
         if (ok) svc.reloadProc.running = true
         svc.stateWritten()
@@ -184,16 +200,17 @@ QtObject {
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
+        // Runs inside the op queued by set(), so only one check is ever in flight.
         var p = svc.pendingSet
         svc.pendingSet = null
-        if (!p) return
+        if (!p) { svc.opDone(); return }
         var entry = null
         try { entry = JSON.parse(String(text).match(/\{[^{}]*\}/)[0]) } catch (e) {}
-        if (!entry || !entry.option) { svc.notify("Unknown Hyprland option: " + p.key, true); return }
+        if (!entry || !entry.option) { svc.notify("Unknown Hyprland option: " + p.key, true); svc.opDone(); return }
         var t = Engine.liveType(entry)
         var why = (t === "int" && Engine.isColorSpec(p.value)) ? "" : Engine.checkValue(t === "text" ? "any" : t, p.value)
-        if (why) { svc.notify(p.key + " " + why + " — not applied", true); return }
-        svc.run(function(state) { state.cfg = Engine.normalize(state.cfg); state.cfg.options[p.key] = p.value; return p.key + " = " + p.text })
+        if (why) { svc.notify(p.key + " " + why + " — not applied", true); svc.opDone(); return }
+        svc.apply(p.state, function(state) { state.cfg = Engine.normalize(state.cfg); state.cfg.options[p.key] = p.value; return p.key + " = " + p.text })
       }
     }
   }
@@ -201,14 +218,17 @@ QtObject {
   // mutate(state) edits the parsed state in place and returns a label, or ""
   // to change nothing. Queued; returns immediately.
   function run(mutate) {
-    withState(function(state) {
-      if (!state) { svc.notify("state.json is unreadable; nothing was changed", true); svc.opDone(); return }
-      var label = mutate(state)
-      if (!label) { svc.opDone(); return }
-      svc.pending = { state: state, label: label }
-      svc.baselineProc.running = true
-    })
+    withState(function(state) { svc.apply(state, mutate) })
     return "ok"
+  }
+
+  // The body of an op once state.json has been read.
+  function apply(state, mutate) {
+    if (!state) { svc.notify("state.json is unreadable; nothing was changed", true); svc.opDone(); return }
+    var label = mutate(state)
+    if (!label) { svc.opDone(); return }
+    svc.pending = { state: state, label: label }
+    svc.baselineProc.running = true
   }
 
   // Catalogue type when known; anything else must at least be a sane shape,
@@ -363,9 +383,12 @@ QtObject {
       if (String(key).indexOf("hf:") === 0) {
         return svc.run(function(state) { state.cfg = Engine.normalize(state.cfg); state.cfg.options[key] = v; return key + " = " + value })
       }
-      svc.pendingSet = { key: key, value: v, text: value }
-      svc.checkProc.command = Engine.capped(["timeout", "5", "hyprctl", "getoption", key, "-j"], 64 * 1024)
-      svc.checkProc.running = true
+      // Queued like every other op, so two quick `set`s can't clobber each other.
+      svc.withState(function(state) {
+        svc.pendingSet = { state: state, key: key, value: v, text: value }
+        svc.checkProc.command = Engine.capped(["timeout", "5", "hyprctl", "getoption", key, "-j"], 64 * 1024)
+        svc.checkProc.running = true
+      })
       return "ok"
     }
 

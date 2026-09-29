@@ -127,6 +127,13 @@ blast radius is smaller.
    - B7: in `baselineProc`, if the output is empty or doesn't parse,
      `notify("Could not read Omarchy's animations; not applied", true)`,
      clear `pending` and call `opDone()`.
+   **Deviation (implemented):** B2 aborts only on a failed **state** write,
+   and `abort()` takes no prefix: the service writer holds only the current
+   op's jobs. A failed history write is reported and the op continues. At that
+   point `state.json` has already landed, so aborting would skip the Lua write
+   and cause the state/Lua mismatch B2 exists to prevent. B3 keeps a
+   `pendingSet` slot, which now carries the op's state; it is safe because ops
+   are serial.
    → verify: tests pass. Runtime check in step 10.
 
 8. **B4, Service ↔ Panel**:
