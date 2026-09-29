@@ -78,22 +78,25 @@
               };
             };
           };
-          # One directory symlink; the id must stay aziz.hyprforge (state paths, IPC).
-          # Enabling it in shell.json stays Omarchy's job: `omarchy plugin enable aziz.hyprforge`.
+          # One directory symlink named after the plugin id. State paths and the IPC
+          # target (hyprforge) are not derived from the id and stay the same.
+          # Enabling it in shell.json stays Omarchy's job: `omarchy plugin enable nixarchy.hyprlandsettings`.
           # Keys go in their own file; bindings.lua loads it with
           # pcall(require, "hypr.hyprforge-binds"), which the user adds once.
           config = lib.mkIf cfg.enable {
-            xdg.configFile."omarchy/plugins/aziz.hyprforge".source = cfg.package;
+            xdg.configFile."omarchy/plugins/nixarchy.hyprlandsettings".source = cfg.package;
             home.file.".claude/skills/hyprforge" = lib.mkIf cfg.skill.enable { source = ./skills/hyprforge; };
             xdg.configFile."hypr/hyprforge-binds.lua".text =
               let
                 kb = cfg.keybindings;
               in
               lib.concatStringsSep "\n" (
-                [ "-- Hyprforge keybindings, managed by Home Manager (programs.nixarchy-hyprsetting)." ]
+                [
+                  "-- Nixarchy Hyprland Settings keybindings, managed by Home Manager (programs.nixarchy-hyprsetting)."
+                ]
                 ++
                   lib.optional (kb.open != null)
-                    ''o.bind(${builtins.toJSON kb.open}, "Nixarchy Hyprland Settings", "omarchy-shell shell toggle aziz.hyprforge '{}'")''
+                    ''o.bind(${builtins.toJSON kb.open}, "Nixarchy Hyprland Settings", "omarchy-shell shell toggle nixarchy.hyprlandsettings '{}'")''
                 ++
                   lib.optional (kb.cycleProfile != null)
                     ''o.bind(${builtins.toJSON kb.cycleProfile}, "Next Nixarchy Hyprland Settings profile", "omarchy-shell hyprforge cycleProfile")''

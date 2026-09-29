@@ -130,7 +130,7 @@ Item {
 
   function dismiss() {
     if (root.shell && typeof root.shell.hide === "function")
-      root.shell.hide((root.manifest && root.manifest.id) || "aziz.hyprforge")
+      root.shell.hide((root.manifest && root.manifest.id) || "nixarchy.hyprlandsettings")
     else close()
   }
 
