@@ -1,5 +1,5 @@
 ---
-status: draft
+status: approved
 issue: none (issues are disabled on this repo)
 spec: spec/2026-09-29-rename-plugin-id.md
 ---
