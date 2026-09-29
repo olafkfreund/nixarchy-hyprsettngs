@@ -3,22 +3,35 @@
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-  outputs = { self, nixpkgs }:
+  outputs =
+    { self, nixpkgs }:
     let
-      systems = [ "x86_64-linux" "aarch64-linux" ];
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+      ];
       forAll = f: nixpkgs.lib.genAttrs systems (system: f nixpkgs.legacyPackages.${system});
     in
     {
       packages = forAll (pkgs: {
         default = pkgs.stdenvNoCC.mkDerivation {
           pname = "nixarchy-hyprsetting";
-          version = (builtins.fromJSON (builtins.readFile ./manifest.json)).version;
+          inherit (builtins.fromJSON (builtins.readFile ./manifest.json)) version;
           # Only the plugin itself: no tests, docs or Nix files.
           src = pkgs.lib.fileset.toSource {
             root = ./.;
             fileset = pkgs.lib.fileset.unions [
-              ./manifest.json ./Panel.qml ./Service.qml ./SafeWriter.qml ./BoundedRead.qml
-              ./Engine.js ./Schema.js ./baseline.lua ./icon.svg ./preview.png ./LICENSE
+              ./manifest.json
+              ./Panel.qml
+              ./Service.qml
+              ./SafeWriter.qml
+              ./BoundedRead.qml
+              ./Engine.js
+              ./Schema.js
+              ./baseline.lua
+              ./icon.svg
+              ./preview.png
+              ./LICENSE
               ./components
             ];
           };
@@ -33,8 +46,16 @@
         };
       });
 
-      homeManagerModules.default = { config, lib, pkgs, ... }:
-        let cfg = config.programs.nixarchy-hyprsetting; in
+      homeManagerModules.default =
+        {
+          config,
+          lib,
+          pkgs,
+          ...
+        }:
+        let
+          cfg = config.programs.nixarchy-hyprsetting;
+        in
         {
           options.programs.nixarchy-hyprsetting = {
             enable = lib.mkEnableOption "the Hyprforge Omarchy plugin";
@@ -63,22 +84,80 @@
           config = lib.mkIf cfg.enable {
             xdg.configFile."omarchy/plugins/aziz.hyprforge".source = cfg.package;
             xdg.configFile."hypr/hyprforge-binds.lua".text =
-              let kb = cfg.keybindings; in
-              lib.concatStringsSep "\n" ([ "-- Hyprforge keybindings, managed by Home Manager (programs.nixarchy-hyprsetting)." ]
-                ++ lib.optional (kb.open != null) ''o.bind(${builtins.toJSON kb.open}, "Hyprforge", "omarchy-shell shell toggle aziz.hyprforge '{}'")''
-                ++ lib.optional (kb.cycleProfile != null) ''o.bind(${builtins.toJSON kb.cycleProfile}, "Next Hyprforge profile", "omarchy-shell hyprforge cycleProfile")'')
+              let
+                kb = cfg.keybindings;
+              in
+              lib.concatStringsSep "\n" (
+                [ "-- Hyprforge keybindings, managed by Home Manager (programs.nixarchy-hyprsetting)." ]
+                ++
+                  lib.optional (kb.open != null)
+                    ''o.bind(${builtins.toJSON kb.open}, "Hyprforge", "omarchy-shell shell toggle aziz.hyprforge '{}'")''
+                ++
+                  lib.optional (kb.cycleProfile != null)
+                    ''o.bind(${builtins.toJSON kb.cycleProfile}, "Next Hyprforge profile", "omarchy-shell hyprforge cycleProfile")''
+              )
               + "\n";
           };
         };
 
+      formatter = forAll (pkgs: pkgs.nixfmt-tree);
+
       checks = forAll (pkgs: {
-        default = pkgs.runCommand "nixarchy-hyprsetting-tests" {
-          nativeBuildInputs = [ pkgs.nodejs pkgs.lua ];
-        } ''
-          cp -r ${./.} src && chmod -R u+w src && cd src
-          node test/run.js
-          touch $out
-        '';
+        package = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
+
+        tests =
+          pkgs.runCommand "nixarchy-hyprsetting-tests"
+            {
+              nativeBuildInputs = [
+                pkgs.nodejs
+                pkgs.lua
+              ];
+            }
+            ''
+              cp -r ${./.} src && chmod -R u+w src && cd src
+              node test/run.js
+              touch $out
+            '';
+
+        # Everything that can be checked without a running Hyprland.
+        lint =
+          pkgs.runCommand "nixarchy-hyprsetting-lint"
+            {
+              nativeBuildInputs = [
+                pkgs.nixfmt
+                pkgs.statix
+                pkgs.deadnix
+                pkgs.qt6.qtdeclarative
+                pkgs.nodejs
+                pkgs.shellcheck
+                pkgs.lua
+              ];
+            }
+            ''
+              cp -r ${./.} src && chmod -R u+w src && cd src
+              echo "== nix"
+              nixfmt --check $(find . -name '*.nix')
+              statix check .
+              deadnix --fail .
+              echo "== qml"
+              # qmllint exits non-zero on a syntax error but 0 on the (thousands of)
+              # unresolved-import warnings the sandbox causes, so only the status counts.
+              bad=0
+              for f in $(find . -name '*.qml'); do
+                if ! qmllint "$f" >/dev/null 2>&1; then
+                  qmllint "$f" 2>&1 | grep -F '[syntax]' || true
+                  bad=1
+                fi
+              done
+              [ "$bad" = 0 ]
+              echo "== embedded shell scripts"
+              node test/embedded-sh.js "$TMPDIR/sh"
+              for f in "$TMPDIR"/sh/*.sh; do sh -n "$f"; done
+              shellcheck -s sh "$TMPDIR"/sh/*.sh
+              echo "== lua"
+              luac -p baseline.lua
+              touch $out
+            '';
       });
     };
 }
