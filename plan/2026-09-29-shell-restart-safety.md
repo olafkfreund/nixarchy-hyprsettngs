@@ -58,3 +58,21 @@ spec: spec/2026-09-29-shell-restart-safety.md
 
 - Re-close #953 with a comment.
 - This branch only has docs, so drop it.
+
+## Results (2026-09-29)
+
+- **Step 1:** the rule landed in PR #5 (`feat/rename-plugin-id`) at
+  48b6280 (AGENTS.md invariant 9 and the skill), 93fe26a (README) and
+  6e24866 (wait for `listPlugins`, not `ping`, measured live). The grep
+  found one leftover, `AGENTS.md`'s command block saying
+  `omarchy restart shell  # after any QML change`. It was fixed in PR #5 at
+  ddd7ea2. `grep -n "restart shell"` now shows only the #953 explanation
+  (README), invariant 9 (AGENTS.md) and the "Don't restart" note (skill).
+- **Rule refined by the live run:** wait until `listPlugins` shows the id,
+  not until `ping` answers. `ping` can answer before the reload starts, and
+  the next step then fails "not known".
+- **Step 2:** nixarchy #953 was reopened, with the journal evidence, the
+  hot-reload measurements and the patch direction:
+  https://github.com/olafkfreund/nixarchy/issues/953#issuecomment-5889563876
+- **Step 3:** waiting on the user (a PR for this records-only branch, or
+  close it).
