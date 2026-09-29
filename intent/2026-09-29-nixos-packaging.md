@@ -1,0 +1,61 @@
+---
+status: draft
+issue: none (issues are disabled on this repo)
+author: olafkfreund
+---
+
+# Intent: Rename to nixarchy-hyprsetting and package for NixOS
+
+## Problem
+
+This repo is a fork of the Omarchy plugin "Hyprforge". Its README still
+presents it under the upstream name and tells users to install it with
+`omarchy plugin add <upstream GitHub URL>`, which copies an unpinned checkout
+into `~/.config/omarchy/plugins/aziz.hyprforge`. On Nixarchy (Omarchy on
+NixOS) that install is imperative: it is not in the flake, not reproducible,
+and not rolled back with a generation.
+
+There is also no development environment: the tests (`node test/run.js`,
+`node test/live.js`) need `node` and `lua` on PATH, and nothing declares them.
+
+The code has had no efficiency/quality review since the fork's recent
+safety commits (SafeWriter, bounded input).
+
+## Proposed outcome
+
+- README title and install text say **nixarchy-hyprsetting** and describe the
+  NixOS install; credit to the upstream Hyprforge author stays.
+- `flake.nix` exposes the plugin as a package and a way to install it
+  declaratively on a Nixarchy machine, so a rebuild puts it in place.
+- `devenv` shell: `cd` into the repo gives `node` and `lua`, and the offline
+  test suite runs.
+- A written review of efficiency and quality issues, with the confirmed ones
+  fixed (each fix listed in the plan).
+
+## Affected users and systems
+
+- This repo: README.md, new flake.nix / flake.lock, devenv.nix / devenv.yaml /
+  .envrc, possibly QML/JS fixes from the review.
+- The Nixarchy host that currently has `~/.config/omarchy/plugins/aziz.hyprforge`
+  installed by copy.
+
+## Constraints
+
+- Must not change the plugin id `aziz.hyprforge`, its IPC name
+  (`omarchy-shell hyprforge`) or its state paths (`~/.config/hypr/hyprforge*`),
+  or existing users lose their profiles and the Connect line breaks.
+- Must keep the MIT license and upstream attribution.
+- The plugin must still work when installed from the Nix store (read-only):
+  anything it writes must go under `~/.config`/`~/.cache`, not its own dir.
+- Review fixes must not weaken the existing file-safety or input-bounding code.
+
+## Open questions
+
+1. Name: README says "nixarchy-hyprsetting" but the repo is
+   "nixarchy-hyprsettngs". Rename only the README title, or also the panel's
+   display name in `manifest.json` / launcher entry?
+2. Install mechanism: a Home Manager module that links the store path into
+   `~/.config/omarchy/plugins/aziz.hyprforge` (and enables it), or only a
+   package output that the Nixarchy config wires in itself?
+3. Review scope: fix everything confirmed, or only bugs, leaving pure
+   efficiency/refactor items as a list?
