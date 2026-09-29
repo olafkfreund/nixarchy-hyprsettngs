@@ -1,5 +1,5 @@
 ---
-status: draft
+status: approved
 issue: none (issues are disabled on this repo)
 author: olafkfreund
 ---
@@ -67,13 +67,10 @@ places found so far, from a review of every `Hyprforge` string:
 
 ## Open questions
 
-1. Comments in the code (for example `// Hyprforge engine: …`): rename them
-   too, or leave them? They're invisible to users and keep the diff small.
-2. IPC name: keep only `omarchy-shell hyprforge` (recommended, since it's in
-   users' keybindings), or also add a second, new-name alias?
-3. The notification app name changes to "Nixarchy Hyprland Settings", which
-   is long for a notification header. Is that OK, or should it be a shorter
-   form such as "Hyprland Settings"?
-4. The generated `hyprforge.lua` header says "SUPER+SPACE › Hyprforge". It
-   should name the launcher entry as it will then appear, "Nixarchy Hyprland
-   Settings". Confirm.
+Resolved at approval (2026-09-29), with the user's "use your suggestions":
+
+1. Only user-visible text changes. Code comments are left as they are.
+2. Only `omarchy-shell hyprforge` is kept. No alias.
+3. Notifications use the full name, "Nixarchy Hyprland Settings".
+4. The generated file's header names the launcher entry as it will appear:
+   "SUPER+SPACE › Nixarchy Hyprland Settings".
