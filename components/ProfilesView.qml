@@ -45,7 +45,7 @@ Flickable {
     SectionCard {
       panel: view.panel
       title: "Save this look"
-      subtitle: "A profile stores every Hyprforge setting: options, colors, animations, curves and app rules."
+      subtitle: "A profile stores every Nixarchy Hyprland Settings setting: options, colors, animations, curves and app rules."
       RowLayout {
         Layout.fillWidth: true
         spacing: Style.spacing.md
@@ -204,7 +204,7 @@ Flickable {
     SectionCard {
       panel: view.panel
       title: "Files & safety"
-      subtitle: "Hyprforge writes ~/.config/hypr/hyprforge.lua and loads it with one line in hyprland.lua. If Hyprland ever rejects a change, it is rolled back automatically."
+      subtitle: "Nixarchy Hyprland Settings writes ~/.config/hypr/hyprforge.lua and loads it with one line in hyprland.lua. If Hyprland ever rejects a change, it is rolled back automatically."
       Flow {
         Layout.fillWidth: true
         spacing: Style.spacing.md
