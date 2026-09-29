@@ -139,10 +139,15 @@
               nixfmt --check $(find . -name '*.nix')
               statix check .
               deadnix --fail .
-              echo "== qml (syntax only: qmllint exits 0 on syntax errors, and warns about every unresolved Quickshell import)"
+              echo "== qml"
+              # qmllint exits non-zero on a syntax error but 0 on the (thousands of)
+              # unresolved-import warnings the sandbox causes, so only the status counts.
               bad=0
               for f in $(find . -name '*.qml'); do
-                if qmllint "$f" 2>&1 | grep -F '[syntax]'; then bad=1; fi
+                if ! qmllint "$f" >/dev/null 2>&1; then
+                  qmllint "$f" 2>&1 | grep -F '[syntax]' || true
+                  bad=1
+                fi
               done
               [ "$bad" = 0 ]
               echo "== embedded shell scripts"
