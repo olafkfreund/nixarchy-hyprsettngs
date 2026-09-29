@@ -138,11 +138,12 @@ still available when you want one.
 ## Scripting and keybindings
 
 ```bash
-omarchy-shell hyprforge toggle
+omarchy-shell hyprforge toggle                  # also: open, close
 omarchy-shell hyprforge section blur            # open at a section
 omarchy-shell hyprforge profile "Gaming"        # apply a saved profile
 omarchy-shell hyprforge cycleProfile
 omarchy-shell hyprforge saveProfile "Work"
+omarchy-shell hyprforge listProfiles
 omarchy-shell hyprforge look glass              # stock glass neon soft flat zen compact retro performance
 omarchy-shell hyprforge motion bouncy           # omarchy snappy smooth bouncy slide fade minimal
 omarchy-shell hyprforge set decoration:rounding 12
@@ -202,6 +203,17 @@ Manager module):
 o.bind("SUPER + ALT + H", "Nixarchy Hyprland Settings", "omarchy-shell shell toggle aziz.hyprforge '{}'")
 ```
 
+## For AI agents
+
+- **Changing this code:** read [`AGENTS.md`](AGENTS.md) for the commands,
+  layout and safety rules.
+- **Using the plugin on a desktop:** the skill in
+  [`skills/hyprforge/SKILL.md`](skills/hyprforge/SKILL.md) teaches an agent
+  to make changes through the IPC above, with verification and undo,
+  instead of editing config files. Install it with
+  `programs.nixarchy-hyprsetting.skill.enable = true;`, which puts it in
+  `~/.claude/skills/hyprforge`.
+
 ## Uninstall
 
 1. `omarchy-shell hyprforge reset` — returns Hyprland to your own config (optional; your profiles are kept in `~/.config/hypr/hyprforge/`).
@@ -235,6 +247,8 @@ A [devenv](https://devenv.sh) shell provides `node` and `lua`. Run
 devenv shell -- test        # node test/run.js (offline; also run by `nix flake check`)
 devenv shell -- test-live   # node test/live.js (needs a running Omarchy)
 nix build .#default         # the plugin as installed by the Home Manager module
+nix flake check             # package, tests and lint: exactly what CI runs
+nix fmt                     # format the Nix files
 ```
 
 ## Credits
