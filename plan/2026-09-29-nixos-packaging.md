@@ -163,6 +163,9 @@ blast radius is smaller.
      mutate them. `computeRows` uses `_hay`.
    - B8: add `trap 'rm -f -- "$new"' EXIT` after `new=$(mktemp …)` in
      `hookScript`, cleared with `trap - EXIT` after the `mv`.
+   **Deviation (implemented):** E6 uses a parallel `allHay` array (same
+   index as `allItemsCache`), not `_hay` on copied items. Copies would change
+   item identity for `Schema.search` and the option rows.
    → verify: tests pass. `qmllint Panel.qml` shows no new warnings, if
    qmllint is available.
 

@@ -64,6 +64,8 @@ Item {
   property var animBaseline: ({ curves: [], animations: [] })
   property var descriptions: []
   property var allItemsCache: []
+  property var typeByKey: ({})   // key -> type for allItemsCache, for typeOf()
+  property var allHay: []        // lowercase "key label desc", same index as allItemsCache
   property var clients: []
   property string monitorName: ""
   property real monitorWidth: 1920
@@ -298,19 +300,21 @@ Item {
 
   function lookKeys() { return Schema.keysInSections(Engine.LOOK_SECTIONS) }
 
+  // Presets never change: canonicalize them once, not on every cfg change.
+  readonly property var lookCanon: Engine.LOOKS.map(function(l) { return canonical(l.options) })
+  readonly property var motionCanon: Engine.MOTIONS.map(function(m) { return canonical(m.anims) })
+
   readonly property string activeLook: {
     var keys = lookKeys()
     var mine = {}
     for (var k in root.cfg.options) if (keys[k]) mine[k] = root.cfg.options[k]
-    var c = canonical(mine)
-    for (var i = 0; i < Engine.LOOKS.length; i++) if (canonical(Engine.LOOKS[i].options) === c) return Engine.LOOKS[i].id
-    return ""
+    var i = root.lookCanon.indexOf(canonical(mine))
+    return i === -1 ? "" : Engine.LOOKS[i].id
   }
 
   readonly property string activeMotion: {
-    var c = canonical(root.cfg.anims)
-    for (var i = 0; i < Engine.MOTIONS.length; i++) if (canonical(Engine.MOTIONS[i].anims) === c) return Engine.MOTIONS[i].id
-    return ""
+    var i = root.motionCanon.indexOf(canonical(root.cfg.anims))
+    return i === -1 ? "" : Engine.MOTIONS[i].id
   }
 
   function applyLook(id) {
@@ -572,9 +576,11 @@ Item {
     'cat -- "$real" > "$bak"',
     'cmp -s -- "$real" "$bak" || { echo "backup failed" >&2; exit 5; }',
     'new=$(mktemp -- "$dir/.hyprland.lua.hyprforge-XXXXXX")',
+    'trap \'rm -f -- "$new"\' EXIT',
     'printf "%s" "$3" > "$new"',
     'chmod --reference="$real" -- "$new" 2>/dev/null || true',
     'mv -fT -- "$new" "$real"',
+    'trap - EXIT',
     'printf "%s\\n" "$bak"'
   ].join("\n")
 
@@ -651,7 +657,7 @@ Item {
   function typeOf(key) {
     var it = Schema.itemFor(key)
     if (it) return it.type
-    for (var i = 0; i < root.allItemsCache.length; i++) if (root.allItemsCache[i].key === key) return root.allItemsCache[i].type
+    if (root.typeByKey[key] !== undefined) return root.typeByKey[key]
     return root.liveTypes[key] || ""
   }
 
@@ -814,6 +820,13 @@ Item {
       var it = Engine.itemFromDescription(d, root.liveTypes[d.name])
       out.push(it)
     }
+    var types = {}, hay = []
+    for (var j = 0; j < out.length; j++) {
+      types[out[j].key] = out[j].type
+      hay.push((out[j].key + " " + out[j].label + " " + (out[j].desc || "")).toLowerCase())
+    }
+    root.typeByKey = types
+    root.allHay = hay
     root.allItemsCache = out
   }
 
@@ -867,10 +880,10 @@ Item {
     if (!sec) return []
     if (sec.view === "all") {
       var f = root.allFilter.toLowerCase().trim()
-      return root.allItemsCache.filter(function(it) {
+      return root.allItemsCache.filter(function(it, i) {
         if (root.allGroup && it.key.split(":")[0] !== root.allGroup) return false
         if (!f) return true
-        return (it.key + " " + it.label + " " + (it.desc || "")).toLowerCase().indexOf(f) !== -1
+        return root.allHay[i].indexOf(f) !== -1
       })
     }
     if (sec.view) return []
