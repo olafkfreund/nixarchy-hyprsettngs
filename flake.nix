@@ -43,11 +43,31 @@
               default = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
               description = "The plugin package linked into ~/.config/omarchy/plugins.";
             };
+            keybindings = {
+              open = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
+                default = "SUPER + ALT + H";
+                description = "Key that opens the Hyprforge panel, or null for none.";
+              };
+              cycleProfile = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
+                default = "SUPER + ALT + SHIFT + P";
+                description = "Key that applies the next saved profile, or null for none.";
+              };
+            };
           };
           # One directory symlink; the id must stay aziz.hyprforge (state paths, IPC).
           # Enabling it in shell.json stays Omarchy's job: `omarchy plugin enable aziz.hyprforge`.
+          # Keys go in their own file; bindings.lua loads it with
+          # pcall(require, "hypr.hyprforge-binds"), which the user adds once.
           config = lib.mkIf cfg.enable {
             xdg.configFile."omarchy/plugins/aziz.hyprforge".source = cfg.package;
+            xdg.configFile."hypr/hyprforge-binds.lua".text =
+              let kb = cfg.keybindings; in
+              lib.concatStringsSep "\n" ([ "-- Hyprforge keybindings, managed by Home Manager (programs.nixarchy-hyprsetting)." ]
+                ++ lib.optional (kb.open != null) ''o.bind(${builtins.toJSON kb.open}, "Hyprforge", "omarchy-shell shell toggle aziz.hyprforge '{}'")''
+                ++ lib.optional (kb.cycleProfile != null) ''o.bind(${builtins.toJSON kb.cycleProfile}, "Next Hyprforge profile", "omarchy-shell hyprforge cycleProfile")'')
+              + "\n";
           };
         };
 

@@ -31,7 +31,23 @@ imports = [ inputs.nixarchy-hyprsetting.homeManagerModules.default ];
 programs.nixarchy-hyprsetting.enable = true;
 ```
 
-This links the plugin into `~/.config/omarchy/plugins/aziz.hyprforge`. After
+This links the plugin into `~/.config/omarchy/plugins/aziz.hyprforge` and
+writes its keybindings to `~/.config/hypr/hyprforge-binds.lua`:
+
+| Option | Default | Does |
+|---|---|---|
+| `keybindings.open` | `"SUPER + ALT + H"` | open the panel |
+| `keybindings.cycleProfile` | `"SUPER + ALT + SHIFT + P"` | apply the next saved profile |
+
+Set either to `null` to leave it out. Home Manager never edits your own
+`bindings.lua`. Add this line to it once to load the keys (`pcall` keeps
+Hyprland working if the file ever goes away):
+
+```lua
+pcall(require, "hypr.hyprforge-binds")
+```
+
+After
 the first switch, enable it once, and restart the shell after every update:
 
 ```bash
@@ -130,10 +146,12 @@ omarchy-shell hyprforge unset decoration:rounding
 omarchy-shell hyprforge reset                   # back to stock
 ```
 
-Example binding for `~/.config/hypr/bindings.lua`:
+Example binding for `~/.config/hypr/bindings.lua` (the Home Manager module
+sets this one up for you). Check `hyprctl binds` first: upstream suggests
+SUPER+ALT+P, which other plugins often use already.
 
 ```lua
-o.bind("SUPER + ALT + P", "Next Hyprforge profile", "omarchy-shell hyprforge cycleProfile")
+o.bind("SUPER + ALT + SHIFT + P", "Next Hyprforge profile", "omarchy-shell hyprforge cycleProfile")
 ```
 
 ## How it works and why it's safe
@@ -173,7 +191,8 @@ Turn **Menu › Style › Hyprland** into a submenu by adding this to
 "style.hyprland.edit": {"icon":"󰏫","label":"Edit looknfeel.lua","action":"omarchy-launch-config-editor \"$HOME/.config/hypr/looknfeel.lua\""}
 ```
 
-A key to open it, in `~/.config/hypr/bindings.lua`:
+A key to open it, in `~/.config/hypr/bindings.lua` (also set up by the Home
+Manager module):
 
 ```lua
 o.bind("SUPER + ALT + H", "Hyprforge", "omarchy-shell shell toggle aziz.hyprforge '{}'")
