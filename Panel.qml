@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import "Schema.js" as Schema
 import "Engine.js" as Engine
@@ -39,9 +40,9 @@ Item {
   }
 
   // ------------------------------------------------------------- theme
-  readonly property color fg: Color.menu.text
-  readonly property color bg: Color.menu.background
-  readonly property color accent: Color.accent
+  readonly property color fg: Commons.Color.menu.text
+  readonly property color bg: Commons.Color.menu.background
+  readonly property color accent: Commons.Color.accent
   readonly property string font: Style.font.menuFamily
   readonly property real radius: Math.max(4, Math.min(Style.cornerRadius, 10))
 
@@ -1368,7 +1369,7 @@ Item {
       height: window.height - Style.gapsOut * 2
       radius: Style.cornerRadius
       color: root.bg
-      borderSpec: Border.surfaceSpec("menu", "border", Color.menu.border, Math.max(1, Style.space(2)))
+      borderSpec: Border.surfaceSpec("menu", "border", Commons.Color.menu.border, Math.max(1, Style.space(2)))
       padding: Style.spacing.panelPadding
       opacity: root.peek ? 0.12 : 1
       Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
@@ -1509,9 +1510,9 @@ Item {
           Layout.fillWidth: true
           implicitHeight: errRow.implicitHeight + Style.spacing.lg * 2
           radius: root.radius
-          color: Util.alpha(Color.urgent, 0.12)
+          color: Util.alpha(Commons.Color.urgent, 0.12)
           border.width: 1
-          border.color: Util.alpha(Color.urgent, 0.6)
+          border.color: Util.alpha(Commons.Color.urgent, 0.6)
           RowLayout {
             id: errRow
             anchors.fill: parent
@@ -1519,7 +1520,7 @@ Item {
             spacing: Style.spacing.lg
             Text {
               text: Schema.I.warn
-              color: Color.urgent
+              color: Commons.Color.urgent
               font.family: root.font
               font.pixelSize: Style.font.icon
             }
@@ -1754,7 +1755,7 @@ Item {
           spacing: Style.spacing.lg
           Rectangle {
             implicitWidth: Style.space(7); implicitHeight: implicitWidth; radius: implicitWidth / 2
-            color: root.errorText !== "" ? Color.urgent : (persistTimer.running || evalProc.running || checkProc.running || reloadProc.running ? Color.accent : Util.alpha(root.fg, 0.3))
+            color: root.errorText !== "" ? Commons.Color.urgent : (persistTimer.running || evalProc.running || checkProc.running || reloadProc.running ? Commons.Color.accent : Util.alpha(root.fg, 0.3))
             SequentialAnimation on opacity {
               running: persistTimer.running || reloadProc.running
               loops: Animation.Infinite

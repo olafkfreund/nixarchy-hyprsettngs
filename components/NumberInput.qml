@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Commons
+import qs.Commons as Commons
 
 // Compact editable value readout next to a slider: click, type, Enter.
 Rectangle {
@@ -11,14 +12,14 @@ Rectangle {
 
   signal submitted(string text)
 
-  readonly property color fg: panel ? panel.fg : Color.foreground
+  readonly property color fg: panel ? panel.fg : Commons.Color.foreground
 
   implicitWidth: wideField ? Style.space(110) : Math.max(Style.space(58), input.contentWidth + Style.spacing.lg * 2)
   implicitHeight: Style.space(24)
   radius: Style.space(5)
   color: input.activeFocus ? Util.alpha(fg, 0.08) : (hover.hovered ? Util.alpha(fg, 0.05) : "transparent")
   border.width: input.activeFocus ? 1 : 0
-  border.color: panel ? panel.accent : Color.accent
+  border.color: panel ? panel.accent : Commons.Color.accent
 
   HoverHandler { id: hover; cursorShape: Qt.IBeamCursor }
 
@@ -31,7 +32,7 @@ Rectangle {
     horizontalAlignment: TextInput.AlignRight
     text: box.text
     color: box.fg
-    selectionColor: Util.alpha(panel ? panel.accent : Color.accent, 0.4)
+    selectionColor: Util.alpha(panel ? panel.accent : Commons.Color.accent, 0.4)
     font.family: panel ? panel.font : Style.font.family
     font.pixelSize: Style.font.bodySmall
     font.features: { "tnum": 1 }

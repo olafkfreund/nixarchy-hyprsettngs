@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import "../Engine.js" as Engine
 import "../Schema.js" as Schema
@@ -22,8 +23,8 @@ ColumnLayout {
   property int selected: 0
   property bool pickerOpen: false
 
-  readonly property color fg: panel ? panel.fg : Color.foreground
-  readonly property color accent: panel ? panel.accent : Color.accent
+  readonly property color fg: panel ? panel.fg : Commons.Color.foreground
+  readonly property color accent: panel ? panel.accent : Commons.Color.accent
   readonly property string fontFamily: panel ? panel.font : Style.font.family
   readonly property var slots: spec ? spec.slots : []
   readonly property int alpha: spec && spec.alpha !== undefined ? spec.alpha : 255

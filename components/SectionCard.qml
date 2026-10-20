@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import qs.Commons
+import qs.Commons as Commons
 
 // Titled group inside a view.
 ColumnLayout {
@@ -20,7 +21,7 @@ ColumnLayout {
     visible: card.title !== ""
     Text {
       text: card.title
-      color: panel ? panel.fg : Color.foreground
+      color: panel ? panel.fg : Commons.Color.foreground
       font.family: panel ? panel.font : Style.font.family
       font.pixelSize: Style.font.title
       font.bold: true
@@ -29,7 +30,7 @@ ColumnLayout {
       Layout.fillWidth: true
       visible: text !== ""
       text: card.subtitle
-      color: Util.alpha(panel ? panel.fg : Color.foreground, 0.55)
+      color: Util.alpha(panel ? panel.fg : Commons.Color.foreground, 0.55)
       font.family: panel ? panel.font : Style.font.family
       font.pixelSize: Style.font.caption
       wrapMode: Text.WordWrap

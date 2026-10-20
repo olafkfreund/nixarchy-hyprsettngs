@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import "../Engine.js" as Engine
 import "../Schema.js" as Schema
@@ -23,8 +24,8 @@ ColumnLayout {
   signal edited(var curve)
   signal committed(var curve)
 
-  readonly property color fg: panel ? panel.fg : Color.foreground
-  readonly property color accent: panel ? panel.accent : Color.accent
+  readonly property color fg: panel ? panel.fg : Commons.Color.foreground
+  readonly property color accent: panel ? panel.accent : Commons.Color.accent
   readonly property string fontFamily: panel ? panel.font : Style.font.family
   readonly property bool isSpring: curve && curve.type === "spring"
   readonly property var samples: Engine.curveSamples(curve, 90)
@@ -113,7 +114,7 @@ ColumnLayout {
           y: plotBox.toY(hy) - height / 2
           color: drag.active || hh.hovered ? ce.accent : ce.fg
           border.width: 2
-          border.color: panel ? panel.bg : Color.background
+          border.color: panel ? panel.bg : Commons.Color.background
           visible: ce.editable
           HoverHandler { id: hh; cursorShape: Qt.SizeAllCursor }
           DragHandler {
