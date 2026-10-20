@@ -1664,7 +1664,7 @@ Item {
                 }
               }
               Button {
-                visible: !root.searchQuery && (root.hiddenAdvanced > 0 || (root.showAdvanced && root.section.items && root.section.items.some(function(i) { return i.advanced })))
+                visible: !root.searchQuery && (root.hiddenAdvanced > 0 || (root.showAdvanced && (root.section.items || []).some(function(i) { return i.advanced })))
                 text: root.showAdvanced ? "Hide advanced" : "Advanced (" + root.hiddenAdvanced + ")"
                 bordered: true
                 foreground: root.fg
