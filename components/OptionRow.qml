@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import "../Engine.js" as Engine
 import "../Schema.js" as Schema
@@ -28,8 +29,8 @@ Item {
 
   readonly property string type: item && item.type ? item.type : "text"
   readonly property bool wide: type === "gradient" || type === "color" || (type === "gaps" && gapsExpanded) || type === "vec2" || (type === "text" && !!item.wideText)
-  readonly property color fg: panel ? panel.fg : Color.foreground
-  readonly property color accent: panel ? panel.accent : Color.accent
+  readonly property color fg: panel ? panel.fg : Commons.Color.foreground
+  readonly property color accent: panel ? panel.accent : Commons.Color.accent
   readonly property string fontFamily: panel ? panel.font : Style.font.family
   property bool gapsExpanded: type === "gaps" && Engine.isGaps(value) && !Engine.gapsUniform(value)
 
@@ -286,7 +287,7 @@ Item {
         trackColor: Util.alpha(row.fg, 0.14)
         fillColor: row.accent
         knobColor: row.fg
-        tickColor: row.panel ? row.panel.bg : Color.background
+        tickColor: row.panel ? row.panel.bg : Commons.Color.background
         enabled: row.available
         onMoved: function(v) { row.focusRequested(); row.edited(row.snap(v)) }
         onReleased: function(v) { row.committed(row.snap(v)) }

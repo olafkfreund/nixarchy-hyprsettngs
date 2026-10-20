@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Effects
 import qs.Commons
+import qs.Commons as Commons
 import "../Engine.js" as Engine
 
 // A scale model of your desktop drawn from the values being edited: your real
@@ -135,7 +136,7 @@ Item {
   // bar
   Rectangle {
     x: 0; y: 0; width: parent.width; height: Math.max(3, pv.barH * pv.s)
-    color: Color.bar.background
+    color: Commons.Color.bar.background
     Row {
       anchors.verticalCenter: parent.verticalCenter
       x: parent.height * 0.6
@@ -145,14 +146,14 @@ Item {
         Rectangle {
           required property int index
           width: parent.parent.height * 0.32; height: width; radius: width / 2
-          color: index === 0 ? Color.accent : Util.alpha(Color.bar.text, 0.4)
+          color: index === 0 ? Commons.Color.accent : Util.alpha(Commons.Color.bar.text, 0.4)
         }
       }
     }
     Rectangle {
       anchors.centerIn: parent
       width: parent.height * 2.2; height: parent.height * 0.3; radius: height / 2
-      color: Util.alpha(Color.bar.text, 0.55)
+      color: Util.alpha(Commons.Color.bar.text, 0.55)
     }
   }
 
@@ -254,8 +255,8 @@ Item {
               height: Math.max(2, body.height * 0.035)
               radius: height / 2
               color: index === 0
-                ? (pv.panel ? pv.panel.accent : Color.accent)
-                : Util.alpha(pv.panel ? pv.panel.fg : Color.foreground, 0.28 - index * 0.03)
+                ? (pv.panel ? pv.panel.accent : Commons.Color.accent)
+                : Util.alpha(pv.panel ? pv.panel.fg : Commons.Color.foreground, 0.28 - index * 0.03)
             }
           }
         }

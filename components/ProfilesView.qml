@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import "../Engine.js" as Engine
 import "../Schema.js" as Schema
@@ -144,7 +145,7 @@ Flickable {
             PanelActionButton {
               iconText: view.confirmDelete === pcard.modelData ? Schema.I.check : Schema.I.trash
               tooltipText: view.confirmDelete === pcard.modelData ? "Click again to delete" : "Delete"
-              foreground: view.confirmDelete === pcard.modelData ? Color.urgent : view.fg
+              foreground: view.confirmDelete === pcard.modelData ? Commons.Color.urgent : view.fg
               onClicked: {
                 if (view.confirmDelete === pcard.modelData) { var n = pcard.modelData; view.confirmDelete = ""; panel.deleteProfile(n) }
                 else view.confirmDelete = pcard.modelData
@@ -227,7 +228,7 @@ Flickable {
         }
         Button {
           text: "Reset everything"; iconText: Schema.I.reset; bordered: true
-          foreground: Color.urgent; accent: view.accent; fontFamily: view.fontFamily; fontSize: Style.font.bodySmall
+          foreground: Commons.Color.urgent; accent: view.accent; fontFamily: view.fontFamily; fontSize: Style.font.bodySmall
           onClicked: panel.resetAll()
         }
       }
