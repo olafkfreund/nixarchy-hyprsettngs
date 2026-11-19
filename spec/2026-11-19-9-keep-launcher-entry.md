@@ -6,7 +6,9 @@ intent: intent/2026-11-19-9-keep-launcher-entry.md
 
 # Spec: compare before touching the applications folder
 
-Full spec: [spec/2026-11-19-3107-shell-startup.md](https://github.com/olafkfreund/nixos_config/blob/perf/3107-shell-startup/spec/2026-11-19-3107-shell-startup.md), section 2.
+Full spec, section 2: [spec/2026-11-19-3107-shell-startup.md][full].
+
+[full]: https://github.com/olafkfreund/nixos_config/blob/perf/3107-shell-startup/spec/2026-11-19-3107-shell-startup.md
 
 ## Design
 
