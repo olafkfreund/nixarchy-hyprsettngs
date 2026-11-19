@@ -6,8 +6,9 @@ import "Schema.js" as Schema
 
 // Headless half of Hyprforge.
 //
-// * Installs the SUPER+SPACE launcher entry (only a file carrying the
-//   X-Hyprforge-Managed marker is ever written or removed).
+// * Installs the SUPER+SPACE launcher entry when missing or changed (only a
+//   file carrying the X-Hyprforge-Managed marker is ever replaced). The entry
+//   stays in place across service restarts.
 // * Exposes `omarchy-shell hyprforge <method>` so keybindings and scripts can
 //   switch profiles, looks and motion presets without opening the panel:
 //
@@ -63,29 +64,23 @@ QtObject {
     'dir=${dest%/*}',
     'mkdir -p -- "$dir" || exit 0',
     '[ -L "$dest" ] && exit 0',
-    'if [ -e "$dest" ] && ! grep -q "^X-Hyprforge-Managed=true$" -- "$dest"; then exit 0; fi',
+    'if [ -e "$dest" ]; then',
+    '  grep -q "^X-Hyprforge-Managed=true$" -- "$dest" || exit 0',
+    // Unchanged: touch nothing. Any file created or removed in this directory
+    // makes the shell rescan every desktop entry. Hyprchroma swaps an absolute
+    // Icon= for a name and keeps ours in X-Omarchroma-Original-Icon.
+    '  [ "$(sed -e "/^Icon=/{N;s/^Icon=[^\\n]*\\nX-Omarchroma-Original-Icon=/Icon=/;}" -- "$dest")" = "$(printf "%s" "$2")" ] && exit 0',
+    'fi',
     'tmp=$(mktemp -- "$dir/.hyprforge-desktop.XXXXXX") || exit 0',
     'printf "%s" "$2" > "$tmp" || { rm -f -- "$tmp"; exit 0; }',
     'chmod 644 -- "$tmp"',
-    'if cmp -s -- "$tmp" "$dest"; then rm -f -- "$tmp"; else mv -fT -- "$tmp" "$dest"; fi'
+    'mv -fT -- "$tmp" "$dest"'
   ].join("\n")
 
-  // Removes only our own regular file, never a symlink or someone else's entry.
-  readonly property string removeScript:
-    '[ -L "$1" ] || { grep -q "^X-Hyprforge-Managed=true$" -- "$1" 2>/dev/null && rm -f -- "$1"; }'
-
-  property bool installed: false
-
   Component.onCompleted: {
-    installed = true
     withState(function(state) { svc.opDone() })
     Quickshell.execDetached(["sh", "-c", installScript, "sh", desktopDest, desktopText])
     Quickshell.execDetached(["mkdir", "-p", home + "/.config/hypr/hyprforge", home + "/.cache/hyprforge"])
-  }
-
-  Component.onDestruction: {
-    if (!installed) return
-    Quickshell.execDetached(["sh", "-c", removeScript, "sh", desktopDest])
   }
 
   // ------------------------------------------------------------ headless apply

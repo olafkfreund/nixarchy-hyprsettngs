@@ -275,7 +275,8 @@ On top of upstream Hyprforge:
 2. In the panel, **Profiles & History › Disconnect from Hyprland**, or delete
    the line containing `hypr.hyprforge` from `~/.config/hypr/hyprland.lua`.
 3. `omarchy plugin disable nixarchy.hyprlandsettings`. Do this while it's
-   still installed. It also removes the launcher entry.
+   still installed. The launcher entry remains across service restarts;
+   remove `~/.local/share/applications/hyprforge.desktop` manually if desired.
 4. Set `programs.nixarchy-hyprsetting.enable = false`, switch, then run
    `omarchy-shell shell rescanPlugins`, then wait until
    `omarchy-shell shell ping` answers.
