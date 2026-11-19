@@ -6,8 +6,9 @@ import "Schema.js" as Schema
 
 // Headless half of Hyprforge.
 //
-// * Installs the SUPER+SPACE launcher entry (only a file carrying the
-//   X-Hyprforge-Managed marker is ever written or removed).
+// * Installs the SUPER+SPACE launcher entry when missing or changed (only a
+//   file carrying the X-Hyprforge-Managed marker is ever replaced). The entry
+//   stays in place across service restarts.
 // * Exposes `omarchy-shell hyprforge <method>` so keybindings and scripts can
 //   switch profiles, looks and motion presets without opening the panel:
 //
